@@ -1,0 +1,409 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.iae.pcmcc.biz.pce.pcg">
+
+   <select id="selectEstiCode" parameterType="java.util.HashMap" resultType="kr.re.iae.pcmcc.biz.pce.pcg.vo.PgaVo">
+      /** pcgSql - selectEstiCode - 평가코드 조회 */
+      SELECT
+           VESTICODE         as "vEstiCode"       /* 01_평가코드      */
+         , VESTICODENAME     as "vEstiCodeName"   /* 02_설명          */
+         , VESTICODEVIEW     as "vEstiCodeView"   /* 03_평가코드 View */
+         , VESTICODEUPDATE   as "vEstiCodeUpdate" /* 04_평가코드 갱신 */
+      FROM
+         TCA4001
+      <where>
+         <if test="vYear != null">
+         VESTICODE LIKE #{vYear} || '%'
+         </if>
+      </where>
+      ORDER BY VESTICODE DESC
+   </select>
+
+   <insert id="insertEstiCode" parameterType="kr.re.iae.pcmcc.biz.pce.pcg.vo.PgaVo">
+      /** pcgSql - insertEstiCode - 평가코드 입력 */
+      INSERT INTO TCA4001 (
+           VESTICODE
+         , VESTICODENAME
+         , VESTICODEVIEW
+         , VESTICODEUPDATE
+      ) VALUES
+      (
+           #{vEstiCode}
+         , #{vEstiCodeName}
+         , #{vEstiCodeView}
+         , #{vEstiCodeUpdate}
+      )
+   </insert>
+
+   <update id="updateEstiCode" parameterType="kr.re.iae.pcmcc.biz.pce.pcg.vo.PgaVo">
+      /** pcgSql - updateEstiCode - 평가코드  수정 */
+      UPDATE TCA4001
+      <set>
+         <if test="vEstiCodeName   != null"> VESTICODENAME   = #{vEstiCodeName}  , </if>
+         <if test="vEstiCodeView   != null"> VESTICODEVIEW   = #{vEstiCodeView}  , </if>
+         <if test="vEstiCodeUpdate != null"> VESTICODEUPDATE = #{vEstiCodeUpdate}, </if>
+      </set>
+      <where>
+         AND VESTICODE = #{vEstiCode}
+      </where>
+   </update>
+
+   <delete id="deleteEstiCode" parameterType="java.util.HashMap">
+      /** pcgSql - deleteEstiCode - 평가코드 삭제 */
+      DELETE FROM TCA4001
+      <where>
+         AND VESTICODE = #{vEstiCode}
+      </where>
+   </delete>
+
+   <select id="checkProject" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+      /** pcgSql - checkProject - 차수과제코드 체크 */
+      SELECT
+           B.VPROJECTCODE       as "vProjectCode"
+         , A.VKEYPROJECTNAME    as "vKeyProjectName"
+         , A.VKEYPROJECTCODE    as "vKeyProjectCode"
+         , C.VTEAMNAME          as "vDeptName"
+         , A.VPROORGNAME        as "vGovName"
+         , A.VPROJECTDIVISION   as "vProjectDivision"
+         , A.VSTARTDATE         as "vTotStartDate"
+         , A.VENDDATE           as "vTotEndDate"
+         , B.VSTARTDATE         as "vStartDate"
+         , B.VENDDATE           as "vEndDate"
+         , A.VMANAGER           as "vProjectPm"
+         , D.VNAME              as "vProjectPmName"
+         , A.VGOAL              as "vProjectGoal"
+      FROM
+         TCZ2003 A,
+         TCZ2006 B,
+         (SELECT VTEAMCODE, VTEAMNAME FROM TAZ2001 WHERE VUSEYN = 'Y' AND VTEAMFLAG IN ('1', '2')) C,
+         TAA2101 D
+      <where>
+         AND A.VKEYPROJECTCODE = B.VKEYPROJECTCODE
+         AND B.VPROJECTSTEP = '3'
+         AND B.VPROJECTCODE = #{vProjectCode}
+         AND A.VDEPTCODE = C.VTEAMCODE(+)
+         AND A.VMANAGER = D.VEMPLNO
+      </where>
+   </select>
+
+   <!-- 코드관리 - 과제코드 관리 -->
+   <select id="selectProjectCodeList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+      /** pcgSql - selectProjectCodeList - 과제코드 조회 */
+      SELECT
+           A.VESTICODE           as "vEstiCode"         /* 01_평가코드                    */
+         , A.VPROJECTCODE        as "vProjectCode"      /* 02_과제코드                    */
+         , A.VPROJECTNAME        as "vProjectName"      /* 03_과제명                      */
+         , A.VDEPTNAME           as "vDeptName"         /* 04_센터명                      */
+         , A.VGOVNAME            as "vGovName"          /* 05_부처명                      */
+         , A.VPROJECTDIVISION    as "vProjectDivision"  /* 06_사업명                      */
+         , A.VTOTSTARTDATE       as "vTotStartDate"     /* 07_총과제시작일                */
+         , A.VTOTENDDATE         as "vTotEndDate"       /* 08_총과제종료일                */
+         , A.VSTARTDATE          as "vStartDate"        /* 09_과제시작일                  */
+         , A.VENDDATE            as "vEndDate"          /* 10_과제종료일                  */
+         , A.VPROJECTPM          as "vProjectPm"        /* 11_과제 PM                     */
+         , B.VNAME               as "vProjectPmName"    /* _과제 PM 성명                  */
+         , A.VPROJECTEVA         as "vProjectEva"       /* 12_과제 평가자                 */
+         , C.VNAME               as "vProjectEvaName"   /* _과제 평가자 성명              */
+         , A.VPROJECTGOAL        as "vProjectGoal"      /* 13_과제 목표                   */
+         , A.VPROJECTMILESTONE   as "vProjectMilestone" /* 14_평가 기간내 Milestone       */
+         , A.VESTISTEP           as "vEstiStep"         /* 15_과제 진행단계               */
+         , A.VDUEDATE1           as "vDueDate1"         /* 16_연구원 입력 종료일자        */
+         , A.VDUEDATE2           as "vDueDate2"         /* 17_PM 기여도 평가 종료일자     */
+         , A.VDUEDATE3           as "vDueDate3"         /* 18_연구원 평가확인 종료일자    */
+         , A.VDUEDATE4           as "vDueDate4"         /* 19_센터장 기여도 확인 종료일자 */
+         , A.VDUEDATE5           as "vDueDate5"         /* 20_PM 최종확인 종료일자        */
+      FROM
+         TCA4003 A, TAA2101 B, TAA2101 C
+      <where>
+             A.VESTICODE = #{vEstiCode}
+         AND A.VPROJECTPM = B.VEMPLNO(+)
+         AND A.VPROJECTEVA = C.VEMPLNO(+)
+       <choose>
+        <when test='vEstiStep != null and vEstiStep != "A"'>
+         AND A.VESTISTEP = #{vEstiStep}
+        </when>
+       </choose>
+      </where>
+      ORDER BY A.VESTICODE, A.VPROJECTCODE
+   </select>
+
+   <insert id="insertProjectCode" parameterType="kr.re.iae.pcmcc.biz.pce.pcg.vo.PgbVo">
+      /** pcgSql - insertProjectCode - 과제코드 입력 */
+      INSERT INTO TCA4003 (
+           VESTICODE
+         , VPROJECTCODE
+         , VPROJECTNAME
+         , VDEPTNAME
+         , VGOVNAME
+         , VPROJECTDIVISION
+         , VTOTSTARTDATE
+         , VTOTENDDATE
+         , VSTARTDATE
+         , VENDDATE
+         , VPROJECTPM
+         , VPROJECTEVA
+         , VPROJECTGOAL
+         , VPROJECTMILESTONE
+         , VESTISTEP
+         , VDUEDATE1
+         , VDUEDATE2
+         , VDUEDATE3
+         , VDUEDATE4
+         , VDUEDATE5
+      ) VALUES
+      (
+           #{vEstiCode}
+         , #{vProjectCode}
+         , #{vProjectName}
+         , #{vDeptName}
+         , #{vGovName}
+         , #{vProjectDivision}
+         , #{vTotStartDate, jdbcType=VARCHAR}
+         , #{vTotEndDate, jdbcType=VARCHAR}
+         , #{vStartDate, jdbcType=VARCHAR}
+         , #{vEndDate, jdbcType=VARCHAR}
+         , #{vProjectPm, jdbcType=VARCHAR}
+         , #{vProjectEva, jdbcType=VARCHAR}
+         , #{vProjectGoal, jdbcType=VARCHAR}
+         , #{vProjectMilestone, jdbcType=VARCHAR}
+         , #{vEstiStep}
+         , #{vDueDate1, jdbcType=VARCHAR}
+         , #{vDueDate2, jdbcType=VARCHAR}
+         , #{vDueDate3, jdbcType=VARCHAR}
+         , #{vDueDate4, jdbcType=VARCHAR}
+         , #{vDueDate5, jdbcType=VARCHAR}
+      )
+   </insert>
+
+   <update id="updateProjectCode" parameterType="kr.re.iae.pcmcc.biz.pce.pcg.vo.PgbVo">
+      /** pcgSql - updateProjectCode - 과제코드 수정 */
+      UPDATE TCA4003
+      <set>
+         <if test="vProjectName      != null"> VPROJECTNAME      = #{vProjectName}     , </if>
+         <if test="vDeptName         != null"> VDEPTNAME         = #{vDeptName}        , </if>
+         <if test="vGovName          != null"> VGOVNAME          = #{vGovName}         , </if>
+         <if test="vProjectDivision  != null"> VPROJECTDIVISION  = #{vProjectDivision} , </if>
+         <if test="vTotStartDate     != null"> VTOTSTARTDATE     = #{vTotStartDate}    , </if>
+         <if test="vTotEndDate       != null"> VTOTENDDATE       = #{vTotEndDate}      , </if>
+         <if test="vStartDate        != null"> VSTARTDATE        = #{vStartDate}       , </if>
+         <if test="vEndDate          != null"> VENDDATE          = #{vEndDate}         , </if>
+         <if test="vProjectPm        != null"> VPROJECTPM        = #{vProjectPm}       , </if>
+         <if test="vProjectEva       != null"> VPROJECTEVA       = #{vProjectEva}      , </if>
+         <if test="vProjectGoal      != null"> VPROJECTGOAL      = #{vProjectGoal}     , </if>
+         <if test="vProjectMilestone != null"> VPROJECTMILESTONE = #{vProjectMilestone}, </if>
+         <if test="vEstiStep         != null"> VESTISTEP         = #{vEstiStep}        , </if>
+         <if test="vDueDate1         != null"> VDUEDATE1         = #{vDueDate1}        , </if>
+         <if test="vDueDate2         != null"> VDUEDATE2         = #{vDueDate2}        , </if>
+         <if test="vDueDate3         != null"> VDUEDATE3         = #{vDueDate3}        , </if>
+         <if test="vDueDate4         != null"> VDUEDATE4         = #{vDueDate4}        , </if>
+         <if test="vDueDate5         != null"> VDUEDATE5         = #{vDueDate5}        , </if>
+      </set>
+      <where>
+         AND VESTICODE = #{vEstiCode}
+         AND VPROJECTCODE = #{vProjectCode}
+      </where>
+   </update>
+
+   <delete id="deleteProjectCode" parameterType="java.util.HashMap">
+      /** pcgSql - deleteProjectCode - 과제코드 삭제 */
+      DELETE FROM TCA4003
+      <where>
+         AND VESTICODE = #{vEstiCode}
+         AND VPROJECTCODE = #{vProjectCode}
+      </where>
+   </delete>
+
+   <delete id="deleteProjectCodeAll" parameterType="java.util.HashMap">
+      /** pcgSql - deleteProjectCodeAll - 과제코드 전체 삭제 */
+      DELETE FROM TCA4003
+      <where>
+         AND VESTICODE = #{vEstiCode}
+      </where>
+   </delete>
+
+   <select id="selectProjectCodeExcelList" parameterType="java.util.HashMap" resultType="kr.re.iae.pcmcc.biz.pce.pcg.vo.PgbVo">
+      /** pcgSql - selectProjectCodeExcelList - 과제코드 목록 엑셀 저장 */
+      SELECT
+           A.VESTICODE           as "vEstiCode"         /* 01_평가코드                    */
+         , A.VPROJECTCODE        as "vProjectCode"      /* 02_과제코드                    */
+         , A.VPROJECTNAME        as "vProjectName"      /* 03_과제명                      */
+         , A.VDEPTNAME           as "vDeptName"         /* 04_센터명                      */
+         , A.VGOVNAME            as "vGovName"          /* 05_부처명                      */
+         , A.VPROJECTDIVISION    as "vProjectDivision"  /* 06_사업명                      */
+         , A.VTOTSTARTDATE       as "vTotStartDate"     /* 07_총과제시작일                */
+         , A.VTOTENDDATE         as "vTotEndDate"       /* 08_총과제종료일                */
+         , A.VSTARTDATE          as "vStartDate"        /* 09_과제시작일                  */
+         , A.VENDDATE            as "vEndDate"          /* 10_과제종료일                  */
+         , A.VPROJECTPM          as "vProjectPm"        /* 11_과제 PM                     */
+         , B.VNAME               as "vProjectPmName"    /*   _과제 PM 성명                */
+         , A.VPROJECTEVA         as "vProjectEva"       /* 12_과제 평가자                 */
+         , C.VNAME               as "vProjectEvaName"   /*   _과제 평가자 성명            */
+         , A.VPROJECTGOAL        as "vProjectGoal"      /* 13_과제 목표                   */
+         , A.VPROJECTMILESTONE   as "vProjectMilestone" /* 14_평가 기간내 Milestone       */
+         , DECODE(A.VESTISTEP, '1', '연구원 입력중/PM 평가중',
+            '2', '연구원 확인중/센터장 확인중',
+            '3', '센터장 반려',
+            '4', 'PM 최종 확인 중',
+            '5', '최종 평가완료',
+            A.VESTISTEP)         as "vEstiStep"         /* 15_과제 진행단계               */
+         , A.VDUEDATE1           as "vDueDate1"         /* 16_연구원 입력 종료일자        */
+         , A.VDUEDATE2           as "vDueDate2"         /* 17_PM 기여도 평가 종료일자     */
+         , A.VDUEDATE3           as "vDueDate3"         /* 18_연구원 평가확인 종료일자    */
+         , A.VDUEDATE4           as "vDueDate4"         /* 19_센터장 기여도 확인 종료일자 */
+         , A.VDUEDATE5           as "vDueDate5"         /* 20_PM 최종확인 종료일자        */
+      FROM
+         TCA4003 A, TAA2101 B, TAA2101 C
+      <where>
+             A.VESTICODE = #{vEstiCode}
+         AND A.VPROJECTPM = B.VEMPLNO(+)
+         AND A.VPROJECTEVA = C.VEMPLNO(+)
+       <choose>
+        <when test='vEstiStep != null and vEstiStep != "A"'>
+         AND A.VESTISTEP = #{vEstiStep}
+        </when>
+       </choose>
+      </where>
+      ORDER BY A.VESTICODE, A.VPROJECTCODE
+   </select>
+
+   <select id="selectEmplNoList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+      /** pcgSql - selectEmplNoList - 인원마스터 조회 */
+      SELECT
+           VESTICODE       as "vEstiCode"  /* 01_평가코드      */
+         , VEMPLNO         as "vEmplNo"    /* 02_사번          */
+         , VNAME           as "vName"      /* 03_성명          */
+         , VDEPTNAME       as "vDeptName"  /* 04_센터명        */
+         , VTEAMNAME       as "vTeamName"  /* 05_팀명          */
+         , VPOSNAME        as "vPosName"   /* 06_직위명        */
+         , VPASSWORD       as "vPassword"  /* 07_암호          */
+         , VGRADE          as "vGrade"     /* 08_등급          */
+         , DECODE(VGRADE, 'A', '관리자'
+                        , 'B', 'PM'
+                        , 'C', '평가자'
+                        , 'E', '피평가자')
+                           as "vGradeName" /* 09_등급명        */
+         , VESTIYN         as "vEstiYn"    /* 10_평가대상 여부 */
+         , VRETIREYN       as "vRetireYn"  /* 11_퇴사여부      */
+      FROM
+         TCA4002
+      <where>
+             VESTICODE = #{vEstiCode}
+       <choose>
+        <when test='vDeptName != null and vDeptName != "All"'>
+         AND VDEPTNAME = #{vDeptName}
+        </when>
+       </choose>
+       <choose>
+        <when test='vEstiGrade != null and vEstiGrade != "All"'>
+         AND VGRADE = #{vEstiGrade}
+        </when>
+       </choose>
+       <choose>
+        <when test='vEstiYn != null and vEstiYn != "All"'>
+         AND VESTIYN = #{vEstiYn}
+        </when>
+       </choose>
+      </where>
+      ORDER BY VGRADE, VDEPTNAME, VNAME
+   </select>
+
+   <insert id="insertEmplNo" parameterType="kr.re.iae.pcmcc.biz.pce.pcg.vo.PgcVo">
+      /** pcgSql - insertEmplNo - 인원 마스터 입력 */
+      INSERT INTO TCA4002 (
+           VESTICODE
+         , VEMPLNO
+         , VNAME
+         , VDEPTNAME
+         , VTEAMNAME
+         , VPOSNAME
+         , VPASSWORD
+         , VGRADE
+         , VESTIYN
+         , VRETIREYN
+      ) VALUES
+      (
+           #{vEstiCode}
+         , #{vEmplNo}
+         , #{vName}
+         , #{vDeptName, jdbcType=VARCHAR}
+         , #{vTeamName, jdbcType=VARCHAR}
+         , #{vPosName, jdbcType=VARCHAR}
+         , #{vPassword}
+         , #{vGrade, jdbcType=VARCHAR}
+         , #{vEstiYn}
+         , #{vRetireYn}
+      )
+   </insert>
+
+   <update id="updateEmplNo" parameterType="kr.re.iae.pcmcc.biz.pce.pcg.vo.PgcVo">
+      /** pcgSql - updateProjectCode - 인원 마스터 수정 */
+      UPDATE TCA4002
+      <set>
+         <if test="vName     != null"> VNAME     = #{vName}    , </if>
+         <if test="vDeptName != null"> VDEPTNAME = #{vDeptName}, </if>
+         <if test="vTeamName != null"> VTEAMNAME = #{vTeamName}, </if>
+         <if test="vPosName  != null"> VPOSNAME  = #{vPosName} , </if>
+         <if test="vPassword != null"> VPASSWORD = #{vPassword}, </if>
+         <if test="vGrade    != null"> VGRADE    = #{vGrade}   , </if>
+         <if test="vEstiYn   != null"> VESTIYN   = #{vEstiYn}  , </if>
+         <if test="vRetireYn != null"> VRETIREYN = #{vRetireYn}, </if>
+      </set>
+      <where>
+         AND VESTICODE = #{vEstiCode}
+         AND VEMPLNO = #{vEmplNo}
+      </where>
+   </update>
+
+   <delete id="deleteEmplNo" parameterType="java.util.HashMap">
+      /** pcgSql - deleteEmplNo - 인원마스터 삭제 */
+      DELETE FROM TCA4002
+      <where>
+         AND VESTICODE = #{vEstiCode}
+         AND VEMPLNO = #{vEmplNo}
+      </where>
+   </delete>
+
+   <delete id="deleteAll" parameterType="java.util.HashMap">
+      /** pcgSql - deleteAll - 인원정보 중복 데이터 제거 */
+      DELETE FROM
+         TCA4002
+      <where>
+         AND VESTICODE = #{copyEstiCode}
+      </where>
+   </delete>
+
+   <insert id="copyPgc" parameterType="java.util.HashMap">
+      /** pcgSql - copyPgc - 인원관리 복사 */
+      INSERT INTO
+         TCA4002
+         (
+              VESTICODE
+            , VEMPLNO
+            , VNAME
+            , VDEPTNAME
+            , VTEAMNAME
+            , VPOSNAME
+            , VPASSWORD
+            , VGRADE
+            , VESTIYN
+            , VRETIREYN
+         )
+         SELECT
+              #{copyEstiCode}   as "vEstiCode" /* 01_평가연도      */
+            , VEMPLNO           as "vEmplNo"   /* 02_사번          */
+            , VNAME             as "vName"     /* 03_성명          */
+            , VDEPTNAME         as "vDeptName" /* 04_센터명        */
+            , VTEAMNAME         as "vTeamName" /* 05_팀명          */
+            , VPOSNAME          as "vPosName"  /* 06_직위명        */
+            , VPASSWORD         as "vPassword" /* 07_암호          */
+            , VGRADE            as "vGrade"    /* 08_등급          */
+            , VESTIYN           as "vEstiYn"   /* 09_평가대상 여부 */
+            , VRETIREYN         as "vRetireYn" /* 10_퇴사여부 */
+         FROM
+            TCA4002
+         <where>
+            AND VESTICODE = #{searchEstiCode}
+         </where>
+   </insert>
+
+</mapper>

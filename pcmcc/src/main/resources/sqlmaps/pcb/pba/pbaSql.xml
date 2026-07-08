@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.iae.pcmcc.biz.pcb.pba">
+
+   <select id="selectProjectCodeList" parameterType="java.util.HashMap" resultType="kr.re.iae.pcmcc.biz.pcb.pba.vo.PrjCodeVo">
+      /** pbaSql - selectProjectCodeList - 과제코드/기여도을 조회 */
+      SELECT
+           A.VESTICODE          as "vEstiCode"         /* 평가코드            */
+         , A.VPROJECTCODE       as "vProjectCode"      /* 과제코드            */
+         , A.VPROJECTNAME       as "vProjectName"      /* 과제명              */
+         , A.VDEPTNAME          as "vDeptName"         /* 센터명              */
+         , A.VGOVNAME           as "vGovName"          /* 부처명              */
+         , A.VPROJECTDIVISION   as "vProjectDivision"  /* 사업명              */
+         , A.VTOTSTARTDATE      as "vTotStartDate"     /* 총과제시작일        */
+         , A.VTOTENDDATE        as "vTotEndDate"       /* 총과제종료일        */
+         , A.VSTARTDATE         as "vStartDate"        /* 과제시작일          */
+         , A.VENDDATE           as "vEndDate"          /* 과제종료일          */
+         , A.VPROJECTPM         as "vProjectPm"        /* 과제PM              */
+         , (
+            SELECT
+               C.VNAME
+            FROM
+               TCA4002 C
+            <where>
+                   C.VESTICODE = VESTICODE
+               AND C.VEMPLNO = VPROJECTPM
+               AND C.VESTICODE = #{vEstiCode}
+            </where>
+           )                    as "vProjectPmName"    /* 과제PM명            */
+         , A.VPROJECTEVA        as "vProjectEva"       /* 과제평가자          */
+         , (
+            SELECT
+               C.VNAME
+            FROM
+               TCA4002 C
+            <where>
+                   C.VESTICODE = VESTICODE
+               AND C.VEMPLNO = VPROJECTEVA
+               AND C.VESTICODE = #{vEstiCode}
+            </where>
+           )                    as "vProjectEvaName"   /* 과제 평가자명       */
+         , A.VPROJECTGOAL       as "vProejctGoal"      /* 과제목표            */
+         , A.VPROJECTMILESTONE  as "vProjectMilestone" /* 평가기간내 마일스톤 */
+         , A.VESTISTEP          as "vEstiStep"         /* 과제진행단계        */
+         , B.VEMPLNO            as "vEmplNo"           /* 연구원 사번         */
+         , B.VWORK              as "vWork"             /* 업무                */
+         , B.NCONTRIBUTION      as "nContribution"     /* 개인 기여도         */
+         , B.VCONTENT           as "vContent"          /* 평가 의견           */
+         , NVL(B.VCONFIRM, 'N') as "vConfirm"          /* 확인 여부           */
+         , NVL(B.VFINISH, 'N')  as "vFinish"           /* 완료 여부           */
+      FROM
+         TCA4003 A,
+         TCA4005 B
+      <where>
+             A.VESTICODE = B.VESTICODE
+         AND A.VPROJECTCODE = B.VPROJECTCODE
+         AND A.VESTICODE = #{vEstiCode}
+         AND B.VEMPLNO = #{vEmplNo}
+        <if test ="vProjectCode != null">
+         AND B.VPROJECTCODE = ?
+        </if>
+      </where>
+      ORDER BY A.VPROJECTCODE
+   </select>
+
+   <select id="selectAverageCont" parameterType="java.util.HashMap" resultType="float">
+      SELECT
+         ROUND(NVL(AVG(NCONTRIBUTION), 0), 2)   as "nAverageCont"
+      FROM
+         TCA4005
+      <where>
+             VESTICODE = #{vEstiCode}
+         AND VPROJECTCODE = #{vProjectCode}
+      </where>
+   </select>
+
+   <select id="selectAdditionalProjectList" parameterType="java.util.HashMap" resultType="kr.re.iae.pcmcc.biz.pcb.pba.vo.AddVo">
+      /** pbaSql - selectAdditionalProjectList - 추가용 과제 조회 */
+      SELECT
+           VESTICODE      as "vEstiCode"      /* 평가코드 */
+         , VDEPTNAME      as "vDeptName"      /* 센터명   */
+         , VPROJECTPM     as "vProjectPm"     /* 과제PM   */
+         , (
+              SELECT
+                 A.VNAME
+              FROM
+                 TCA4002 A
+              <where>
+                     A.VESTICODE = VESTICODE
+                 AND A.VEMPLNO = VPROJECTPM
+                 AND A.VESTICODE = #{vEstiCode}
+              </where>
+           )              as "vProjectPmName" /* 과제PM명 */
+         , VPROJECTCODE   as "vProjectCode"   /* 과제코드 */
+         , VPROJECTNAME   as "vProjectName"   /* 과제명   */
+      FROM
+         TCA4003
+      <where>
+         VPROJECTCODE NOT IN (
+                                SELECT
+                                   VPROJECTCODE
+                                FROM
+                                   TCA4005
+                                <where>
+                                       VESTICODE = #{vEstiCode}
+                                   AND VEMPLNO = #{vEmplNo}
+                                </where>
+                             )
+         AND VESTICODE = #{vEstiCode}
+      </where>
+      ORDER BY VDEPTNAME
+   </select>
+
+   <delete id="deleteProjectCode" parameterType="kr.re.iae.pcmcc.biz.pcb.pba.vo.PrjCodeVo">
+      /** pbaSql - deleteProjectCode - 참여과제 삭제 */
+      DELETE FROM TCA4005
+      <where>
+             VESTICODE = #{vEstiCode}
+         AND VPROJECTCODE = #{vProjectCode}
+         AND VEMPLNO = #{vEmplNo}
+      </where>
+   </delete>
+
+   <update id="updateWork" parameterType="kr.re.iae.pcmcc.biz.pcb.pba.vo.PrjCodeVo">
+      /** pbaSql - updateWork - 과제 수행업무 저장 */
+      UPDATE
+         TCA4005
+      SET
+         VWORK = #{vWork}
+      <where>
+             VESTICODE = #{vEstiCode}
+         AND VPROJECTCODE = #{vProjectCode}
+         AND VEMPLNO = #{vEmplNo}
+      </where>
+   </update>
+
+   <update id="updateFinish" parameterType="kr.re.iae.pcmcc.biz.pcb.pba.vo.PrjCodeVo">
+      /** pbaSql - updateFinish - 참여연구원 과제 수행업무 입력 완료 */
+      UPDATE
+         TCA4005
+      SET
+         VFINISH = 'Y'
+      <where>
+             VESTICODE = #{vEstiCode}
+         AND VPROJECTCODE = #{vProjectCode}
+         AND VEMPLNO = #{vEmplNo}
+      </where>
+   </update>
+
+   <insert id="insertProjectCode" parameterType="kr.re.iae.pcmcc.biz.pcb.pba.vo.PrjCodeVo">
+      /** pbaSql - insertProjectCode - 참여과제 추가 */
+      INSERT INTO
+         TCA4005
+         (
+              VESTICODE
+            , VPROJECTCODE
+            , VEMPLNO
+            , NCONTRIBUTION
+            , VFINISH
+         )
+      VALUES
+         (
+              #{vEstiCode}
+            , #{vProjectCode}
+            , #{vEmplNo}
+            , 0
+            , 'Y'
+         )
+   </insert>
+
+   <update id="updateConfirm" parameterType="kr.re.iae.pcmcc.biz.pcb.pba.vo.PrjCodeVo">
+      /** pbaSql - updateConfirm - PM 평가의견 확인 완료 */
+      UPDATE
+         TCA4005
+      SET
+         VCONFIRM = 'Y'
+      <where>
+             VESTICODE = #{vEstiCode}
+         AND VPROJECTCODE = #{vProjectCode}
+         AND VEMPLNO = #{vEmplNo}
+      </where>
+   </update>
+
+</mapper>

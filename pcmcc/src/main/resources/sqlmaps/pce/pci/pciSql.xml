@@ -1,0 +1,726 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.iae.pcmcc.biz.pce.pci">
+
+   <select id="selectPiaList" parameterType="java.util.HashMap" resultType="kr.re.iae.pcmcc.biz.pce.pci.vo.PiaVo">
+      /** pciSql - selectPiaList - 내부인건비/간접비관리 - 월별 직접비/간접비 목록 조회 */
+      SELECT
+           VPROJECTCODE   as "vProjectCode"
+         , VYEAR          as "vYear"
+         , VCLASS         as "vClass"
+         , N1MONAMOUNT    as "n1MonAmount"
+         , N2MONAMOUNT    as "n2MonAmount"
+         , N3MONAMOUNT    as "n3MonAmount"
+         , N4MONAMOUNT    as "n4MonAmount"
+         , N5MONAMOUNT    as "n5MonAmount"
+         , N6MONAMOUNT    as "n6MonAmount"
+         , N7MONAMOUNT    as "n7MonAmount"
+         , N8MONAMOUNT    as "n8MonAmount"
+         , N9MONAMOUNT    as "n9MonAmount"
+         , N10MONAMOUNT   as "n10MonAmount"
+         , N11MONAMOUNT   as "n11MonAmount"
+         , N12MONAMOUNT   as "n12MonAmount"
+      FROM
+         TCA4009
+      <where>
+         VYEAR = #{vYear}
+      </where>
+      ORDER BY VPROJECTCODE
+   </select>
+
+   <select id="checkPiaProject" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+      /** pciSql - checkPiaProject - 차수과제코드 체크 */
+      SELECT
+         VPROJECTCODE   as "vProjectCode"
+      FROM
+         TCZ2006
+      <where>
+             VESTISTEP = '3'
+         AND VPROJECTCODE = #{vProjectCode}
+      </where>
+   </select>
+
+   <insert id="insertPia" parameterType="kr.re.iae.pcmcc.biz.pce.pci.vo.PiaVo">
+      /** pciSql - insertPia - 월별 직접비/간접비 입력(업로드) */
+      INSERT INTO TCA4009 (
+           VPROJECTCODE
+         , VYEAR
+         , VCLASS
+         , N1MONAMOUNT
+         , N2MONAMOUNT
+         , N3MONAMOUNT
+         , N4MONAMOUNT
+         , N5MONAMOUNT
+         , N6MONAMOUNT
+         , N7MONAMOUNT
+         , N8MONAMOUNT
+         , N9MONAMOUNT
+         , N10MONAMOUNT
+         , N11MONAMOUNT
+         , N12MONAMOUNT
+      ) VALUES
+      (
+           #{vProjectCode}
+         , #{vYear}
+         , #{vClass}
+         , #{n1MonAmount, jdbcType=DOUBLE}
+         , #{n2MonAmount, jdbcType=DOUBLE}
+         , #{n3MonAmount, jdbcType=DOUBLE}
+         , #{n4MonAmount, jdbcType=DOUBLE}
+         , #{n5MonAmount, jdbcType=DOUBLE}
+         , #{n6MonAmount, jdbcType=DOUBLE}
+         , #{n7MonAmount, jdbcType=DOUBLE}
+         , #{n8MonAmount, jdbcType=DOUBLE}
+         , #{n9MonAmount, jdbcType=DOUBLE}
+         , #{n10MonAmount, jdbcType=DOUBLE}
+         , #{n11MonAmount, jdbcType=DOUBLE}
+         , #{n12MonAmount, jdbcType=DOUBLE}
+      )
+   </insert>
+
+   <update id="updatePia" parameterType="kr.re.iae.pcmcc.biz.pce.pci.vo.PiaVo">
+      /** pciSql - updatePia - 월별 직접비/간접비  수정 */
+      UPDATE TCA4009
+      <set>
+         <if test="n1MonAmount  != null"> N1MONAMOUNT  = #{n1MonAmount},  </if>
+         <if test="n2MonAmount  != null"> N2MONAMOUNT  = #{n2MonAmount},  </if>
+         <if test="n3MonAmount  != null"> N3MONAMOUNT  = #{n3MonAmount},  </if>
+         <if test="n4MonAmount  != null"> N4MONAMOUNT  = #{n4MonAmount},  </if>
+         <if test="n5MonAmount  != null"> N5MONAMOUNT  = #{n5MonAmount},  </if>
+         <if test="n6MonAmount  != null"> N6MONAMOUNT  = #{n6MonAmount},  </if>
+         <if test="n7MonAmount  != null"> N7MONAMOUNT  = #{n7MonAmount},  </if>
+         <if test="n8MonAmount  != null"> N8MONAMOUNT  = #{n8MonAmount},  </if>
+         <if test="n9MonAmount  != null"> N9MONAMOUNT  = #{n9MonAmount},  </if>
+         <if test="n10MonAmount != null"> N10MONAMOUNT = #{n10MonAmount}, </if>
+         <if test="n11MonAmount != null"> N11MONAMOUNT = #{n11MonAmount}, </if>
+         <if test="n12MonAmount != null"> N12MONAMOUNT = #{n12MonAmount}, </if>
+      </set>
+      <where>
+             VPROJECTCODE = #{vProjectCode}
+         AND VYEAR = #{vYear}
+         AND VCLASS = #{vClass}
+      </where>
+   </update>
+
+   <delete id="deletePia" parameterType="java.util.HashMap">
+      /** pciSql - deletePia - 월별 직접비/간접비 삭제 */
+      DELETE FROM TCA4009
+      <where>
+             VPROJECTCODE = #{vProjectCode}
+         AND VYEAR = #{vYear}
+         AND VCLASS = #{vClass}
+      </where>
+   </delete>
+
+   <insert id="insertPiaMonthlyAuto" statementType="CALLABLE" parameterType="java.util.HashMap">
+      /** pciSql - insertPiaMonthlyAuto - 월별 내부인건비/간접비 입력(계산) */
+      {
+         CALL SP_BATCH_LABORINDIRECT(#{vYyyy, mode=IN, jdbcType=VARCHAR, javaType=String}, #{vGubun, mode=IN, jdbcType=VARCHAR, javaType=String})
+      }
+   </insert>
+
+   <select id="selectPiaHalfYearList" parameterType="java.util.HashMap" resultType="kr.re.iae.pcmcc.biz.pce.pci.vo.PiaHalfYearVo">
+      /** pciSql - selectPiaList - 내부인건비/간접비관리 - 직접비/간접비 목록 조회(분기별/반기별) */
+      SELECT
+           VESTICODE         as "vEstiCode"
+         , VPROJECTCODE      as "vProjectCode"
+         , NDIRECTAMOUNT     as "nDirectAmount"
+         , NINDIRECTAMOUNT   as "nIndirectAmount"
+         , NAMOUNT           as "nAmount"
+      FROM
+         TCA4012
+      <where>
+         VESTICODE = #{vEstiCode}
+      </where>
+      ORDER BY VPROJECTCODE
+   </select>
+
+   <insert id="insertPiaHalfYear" parameterType="kr.re.iae.pcmcc.biz.pce.pci.vo.PiaHalfYearVo">
+      /** pciSql - insertPiaHalfYear - 직접비/간접비 입력(분기별/반기별) */
+      INSERT INTO TCA4012 (
+           VESTICODE
+         , VPROJECTCODE
+         , NDIRECTAMOUNT
+         , NINDIRECTAMOUNT
+         , NAMOUNT
+      ) VALUES
+      (
+           #{vEstiCode}
+         , #{vProjectCode}
+         , #{nDirectAmount  , jdbcType=DOUBLE}
+         , #{nIndirectAmount, jdbcType=DOUBLE}
+         , #{nAmount        , jdbcType=DOUBLE}
+      )
+   </insert>
+
+   <insert id="insertPiaHalfYearHist" parameterType="java.util.HashMap">
+      /** pciSql - insertPiaHalfYearHist - 내부인건비/간접비 이력(분기별/반기별) 입력 */
+      INSERT INTO TCA4053
+         SELECT
+                TO_CHAR(SYSDATE, 'YYYY-MM-DD HH24:MI:SS')
+              , VESTICODE
+              , VPROJECTCODE
+              , NVL(NDIRECTAMOUNT, 0)
+              , NVL(NINDIRECTAMOUNT, 0)
+              , NVL(NAMOUNT, 0)
+         FROM
+              TCA4012
+      <where>
+         VESTICODE = #{vEstiCode}
+      </where>
+   </insert>
+
+   <!-- 2020년, 2021년 : 상하반기, 그외: 1 ~ 4사분기 -->
+   <insert id="insertPiaHalfYearAuto" parameterType="java.util.HashMap">
+      /** pciSql - insertPiaHalfYearAuto - 내부인건비/간접비(분기별/반기별) 입력(계산) */
+      INSERT INTO TCA4012
+         SELECT
+                #{vEstiCode}
+              , VPROJECTCODE
+              , SUM(NDIRECTAMOUNT)
+              , SUM(NINDIRECTAMOUNT)
+              , SUM(NDIRECTAMOUNT) + SUM(NINDIRECTAMOUNT)
+         FROM (
+      <choose>
+         <when test="vYyyy == '2021' or vYyyy == '2020'">
+            <choose>
+               <when test="vGubun != null and vGubun == '01'">
+                       SELECT
+                              VPROJECTCODE
+                            , DECODE(VCLASS, '01', N1MONAMOUNT + N2MONAMOUNT + N3MONAMOUNT + N4MONAMOUNT + N5MONAMOUNT + N6MONAMOUNT, 0) NDIRECTAMOUNT
+                            , DECODE(VCLASS, '02', N1MONAMOUNT + N2MONAMOUNT + N3MONAMOUNT + N4MONAMOUNT + N5MONAMOUNT + N6MONAMOUNT, 0) NINDIRECTAMOUNT
+                       FROM
+                            TCA4009
+                       WHERE VYEAR = #{vYyyy}
+               </when>
+               <otherwise>
+                       SELECT
+                              VPROJECTCODE
+                            , DECODE(VCLASS, '01', N7MONAMOUNT + N8MONAMOUNT + N9MONAMOUNT + N10MONAMOUNT + N11MONAMOUNT + N12MONAMOUNT, 0) NDIRECTAMOUNT
+                            , DECODE(VCLASS, '02', N7MONAMOUNT + N8MONAMOUNT + N9MONAMOUNT + N10MONAMOUNT + N11MONAMOUNT + N12MONAMOUNT, 0) NINDIRECTAMOUNT
+                       FROM
+                            TCA4009
+                       WHERE VYEAR = #{vYyyy}
+               </otherwise>
+            </choose>
+         </when>
+         <otherwise>
+            <choose>
+               <when test="vGubun == '01'">
+                       SELECT
+                              VPROJECTCODE
+                            , DECODE(VCLASS, '01', N1MONAMOUNT + N2MONAMOUNT + N3MONAMOUNT, 0) NDIRECTAMOUNT
+                            , DECODE(VCLASS, '02', N1MONAMOUNT + N2MONAMOUNT + N3MONAMOUNT, 0) NINDIRECTAMOUNT
+                       FROM
+                            TCA4009
+                       WHERE VYEAR = #{vYyyy}
+               </when>
+               <when test="vGubun == '02'">
+                       SELECT
+                              VPROJECTCODE
+                            , DECODE(VCLASS, '01', N4MONAMOUNT + N5MONAMOUNT + N6MONAMOUNT, 0) NDIRECTAMOUNT
+                            , DECODE(VCLASS, '02', N4MONAMOUNT + N5MONAMOUNT + N6MONAMOUNT, 0) NINDIRECTAMOUNT
+                       FROM
+                            TCA4009
+                       WHERE VYEAR = #{vYyyy}
+               </when>
+               <when test="vGubun == '03'">
+                       SELECT
+                              VPROJECTCODE
+                            , DECODE(VCLASS, '01', N7MONAMOUNT + N8MONAMOUNT + N9MONAMOUNT, 0) NDIRECTAMOUNT
+                            , DECODE(VCLASS, '02', N7MONAMOUNT + N8MONAMOUNT + N9MONAMOUNT, 0) NINDIRECTAMOUNT
+                       FROM
+                            TCA4009
+                       WHERE VYEAR = #{vYyyy}
+               </when>
+               <otherwise>
+                       SELECT
+                              VPROJECTCODE
+                            , DECODE(VCLASS, '01', N10MONAMOUNT + N11MONAMOUNT + N12MONAMOUNT, 0) NDIRECTAMOUNT
+                            , DECODE(VCLASS, '02', N10MONAMOUNT + N11MONAMOUNT + N12MONAMOUNT, 0) NINDIRECTAMOUNT
+                       FROM
+                            TCA4009
+                       WHERE VYEAR = #{vYyyy}
+               </otherwise>
+            </choose>
+         </otherwise>
+      </choose>
+              )
+         GROUP BY VPROJECTCODE
+   </insert>
+
+   <update id="updatePiaHalfYear" parameterType="kr.re.iae.pcmcc.biz.pce.pci.vo.PiaHalfYearVo">
+      /** pciSql - updatePiaHalfYear - 직접비/간접비(분기별/반기별) 수정 */
+      UPDATE TCA4012
+      <set>
+         <if test="nDirectAmount   != null"> NDIRECTAMOUNT   = #{nDirectAmount}  , </if>
+         <if test="nIndirectAmount != null"> NINDIRECTAMOUNT = #{nIndirectAmount}, </if>
+         <if test="nAmount         != null"> NAMOUNT         = #{nDirectAmount} + #{nIndirectAmount}, </if>
+      </set>
+      <where>
+             VESTICODE = #{vEstiCode}
+         AND VPROJECTCODE = #{vProjectCode}
+      </where>
+   </update>
+
+   <delete id="deletePiaHalfYear" parameterType="java.util.HashMap">
+      /** pciSql - deletePiaHalfYear - 직접비/간접비(분기별/반기별) 삭제 */
+      DELETE FROM TCA4012
+      <where>
+             VESTICODE = #{vEstiCode}
+       <choose>
+        <when test="vProjectCode != null and vProjectCode != ''">
+         AND VPROJECTCODE = #{vProjectCode}
+        </when>
+       </choose>
+      </where>
+   </delete>
+
+   <delete id="deletePiaAll" parameterType="java.util.HashMap">
+      /** pciSql - deletePiaAll - 월별 내부인건비/간접비 전체 삭제 */
+      DELETE FROM TCA4009
+      <where>
+         VYEAR = #{vYear}
+      </where>
+   </delete>
+
+   <select id="selectPibList" parameterType="java.util.HashMap" resultType="kr.re.iae.pcmcc.biz.pce.pci.vo.PibVo">
+      /** pciSql - selectPibList - 개인별인건비 - 개인별인건비 조회 */
+      SELECT
+           A.VESTICODE                  as "vEstiCode"
+         , A.VEMPLNO                    as "vEmplNo"
+         , B.VNAME                      as "vName"
+         , (
+              SELECT
+                 VPOSNAME
+              FROM
+                 TAZ2003
+              WHERE
+                     VPOSCODE = B.VPOSCODE
+                 AND VUSEYN = 'Y'
+           )                            as "vPosName"
+         , (
+              SELECT
+                 VTEAMNAME
+              FROM
+                 TAZ2001
+              WHERE
+                     VTEAMCODE = B.VDEPTCODE
+                 AND VTEAMFLAG IN ('1', '2')
+                 AND VUSEYN = 'Y'
+           )                            as "vDeptName"
+         , (
+              SELECT
+                 VTEAMNAME
+              FROM
+                 TAZ2001
+              WHERE
+                     VTEAMCODE = B.VTEAMCODE
+                 AND VTEAMFLAG = '3'
+                 AND VUSEYN = 'Y'
+           )                            as "vTeamName"
+         , A.NAMOUNT                    as "nAmount"
+      FROM
+         TCA4008 A,
+         TAA2101 B
+      <where>
+             A.VEMPLNO = B.VEMPLNO
+         AND A.VESTICODE = #{vEstiCode}
+      </where>
+      ORDER BY VNAME
+   </select>
+
+   <insert id="insertPib" parameterType="kr.re.iae.pcmcc.biz.pce.pci.vo.PibVo">
+      /** pciSql - insertPib - 개인별인건비 입력 */
+      INSERT INTO TCA4008 (
+           VESTICODE
+         , VEMPLNO
+         , NAMOUNT
+      )
+      VALUES
+      (
+           #{vEstiCode}
+         , #{vEmplNo}
+         , #{nAmount, jdbcType=DOUBLE}
+      )
+   </insert>
+
+   <update id="updatePib" parameterType="kr.re.iae.pcmcc.biz.pce.pci.vo.PibVo">
+      /** pciSql - updatePib - 개인별인건비  수정 */
+      UPDATE TCA4008
+      <set>
+         <if test="nAmount != null"> NAMOUNT = #{nAmount} </if>
+      </set>
+      <where>
+             VESTICODE = #{vEstiCode}
+         AND VEMPLNO = #{vEmplNo}
+      </where>
+   </update>
+
+   <delete id="deletePib" parameterType="java.util.HashMap">
+      /** pciSql - deletePib - 개인별인건비 삭제 */
+      DELETE FROM TCA4008
+      <where>
+             VESTICODE = #{vEstiCode}
+         AND VEMPLNO = #{vEmplNo}
+      </where>
+   </delete>
+
+   <delete id="deletePibAll" parameterType="java.util.HashMap">
+      /** pciSql - deletePibAll - 개인별인건비 전체 삭제 */
+      DELETE FROM TCA4008
+      <where>
+         VESTICODE = #{vEstiCode}
+      </where>
+   </delete>
+
+   <select id="selectPicGrid2List" parameterType="java.util.HashMap" resultType="kr.re.iae.pcmcc.biz.pce.pci.vo.PicVo">
+      /** pciSql - selectPicGrid2List - 인건비 확보 - 인건비확보율관리 조회 */
+      SELECT
+           A.VESTICODE                        as "vEstiCode"      /* 평가코드 */
+         , A.VPROJECTCODE                     as "vProjectCode"   /* 과제코드 */
+         , B.VKEYPROJECTNAME                  as "vProjectName"   /* 과제명   */
+         , A.VEMPLNO                          as "vEmplNo"        /* 사번     */
+         , C.VNAME                            as "vName"          /* 성명     */
+         , C.VDEPTCODE                        as "vDeptCode"      /* 부서코드 */
+         , (SELECT
+               VTEAMNAME
+            FROM
+               TAZ2001
+            WHERE
+                   C.VDEPTCODE = VTEAMCODE
+               AND VUSEYN = 'Y'
+               AND VTEAMFLAG IN ('1', '2'))   as "vDeptName"      /* 부서명   */
+         , C.VTEAMCODE                        as "vTeamCode"      /* 팀코드   */
+         , VTEAMNAME                          as "vTeamName"      /* 팀명     */
+         , (SELECT
+               VPOSNAME
+            FROM
+               TAZ2003
+            WHERE
+                   C.VPOSCODE = VPOSCODE
+               AND VUSEYN = 'Y')              as "vPosName"       /* 직위명   */
+         , A.NCONTRIBUTION                    as "nContribution"  /* 참여율   */
+      FROM
+         TCA4005 A,
+         TCZ2003 B,
+         TAA2101 C,
+         TAZ2001 D
+      <where>
+             A.VESTICODE = #{vEstiCode}
+         AND B.VKEYPROJECTCODE = SUBSTR(A.VPROJECTCODE, 1, 5)
+         AND C.VEMPLNO = A.VEMPLNO
+         AND D.VTEAMCODE = C.VTEAMCODE
+      </where>
+      ORDER BY A.VESTICODE, A.VPROJECTCODE, A.VEMPLNO
+   </select>
+
+   <select id="selectPicGrid3List" parameterType="java.util.HashMap" resultType="kr.re.iae.pcmcc.biz.pce.pci.vo.PicVo">
+      /** pciSql - selectPicGrid3List - 인건비 확보 - 인건비확보율관리 조회 */
+      SELECT
+           A.VEMPLNO                                             as "vEmplNo"       /* 사번     */
+         , B.VNAME                                               as "vName"         /* 성명     */
+         , B.VDEPTCODE                                           as "vDeptCode"     /* 부서코드 */
+         , (SELECT VTEAMNAME
+            FROM TAZ2001
+            WHERE
+                   B.VDEPTCODE = VTEAMCODE
+               AND VUSEYN = 'Y'
+               AND VTEAMFLAG IN ('1', '2'))                      as "vDeptName"     /* 부서명   */
+         , B.VTEAMCODE                                           as "vTeamCode"     /* 팀코드   */
+         , C.VTEAMNAME                                           as "vTeamName"     /* 팀코드명 */
+         , (SELECT VPOSNAME
+            FROM TAZ2003
+            WHERE
+                   B.VPOSCODE = VPOSCODE
+               AND VUSEYN = 'Y')                                 as "vPosName"      /* 직위명   */
+         , (SELECT COUNT(DISTINCT SUBSTR(VPROJECTCODE, 1, 5))
+            FROM TCA4005
+            WHERE
+                   A.VEMPLNO = VEMPLNO
+               AND VESTICODE = #{vEstiCode}
+               AND NCONTRIBUTION != 0)                           as "nProjectCnt"   /* 과제건수 */
+         , (SELECT SUM(NCONTRIBUTION)
+            FROM TCA4005
+            WHERE
+                   A.VEMPLNO = VEMPLNO
+               AND VESTICODE = #{vEstiCode})                     as "nContribution" /* 참여율   */
+         , A.NLABORCOST                                          as "nLaborCost"    /* 인건비   */
+         , D.NAMOUNT                                             as "nAmount"       /* 연봉     */
+         , ROUND(A.NLABORCOST / D.NAMOUNT * 100, 2)              as "nSecureRate"   /* 확보율   */
+      FROM
+         (SELECT VESTICODE, VEMPLNO, SUM(NLABORCOST) NLABORCOST
+            FROM TCA4007
+           WHERE
+                 VESTICODE = #{vEstiCode}
+         <if test="vEmplNo != null and vEmplNo != ''">
+             AND VEMPLNO = #{vEmplNo}
+         </if>
+          GROUP BY VESTICODE, VEMPLNO) A,
+         TAA2101 B,
+         TAZ2001 C,
+         TCA4008 D
+      <where>
+             A.VEMPLNO = B.VEMPLNO
+         AND B.VTEAMCODE = C.VTEAMCODE
+         AND A.VEMPLNO = D.VEMPLNO
+         AND A.VESTICODE = D.VESTICODE
+      </where>
+   </select>
+
+   <!-- 인건비 확보율 계산 -->
+   <insert id="insertPicHist" parameterType="java.util.HashMap" >
+      /** ssaSql - insertPicHist - 인건비 확보 - 인건비확보율관리 - 인건비확보액 이력 저장 */
+      INSERT INTO TCA4051
+         SELECT TO_CHAR(SYSDATE, 'YYYY-MM-DD HH24:MI:SS')
+            , VESTICODE
+            , VPROJECTCODE
+            , VEMPLNO
+            , NVL(NLABORCOST, 0)
+         FROM TCA4007
+      <where>
+         VESTICODE = #{vEstiCode}
+      </where>
+   </insert>
+
+   <delete id="deletePic" parameterType="java.util.HashMap">
+      /** pciSql - deletePic - 인건비 확보 - 인건비확보율관리 - 인건비확보액 삭제 */
+      DELETE FROM
+         TCA4007
+      <where>
+         VESTICODE = #{vEstiCode}
+      </where>
+   </delete>
+
+   <insert id="insertPic" parameterType="java.util.HashMap" >
+      /** pciSql - insertPic - 인건비 확보 - 인건비확보율관리 - 인건비확보액  입력(계산) */
+      INSERT INTO TCA4007
+         SELECT
+              VESTICODE
+            , VPROJECTCODE
+            , VEMPLNO
+            , ROUND(NVL((NCONTRIBUTION / 100) * #{nAmount, jdbcType=INTEGER}, 0))
+         FROM TCA4005
+      <where>
+             VESTICODE = #{vEstiCode}
+         AND VPROJECTCODE = #{vProjectCode}
+      </where>
+   </insert>
+
+
+
+   <select id="selectPidList" parameterType="java.util.HashMap" resultType="kr.re.iae.pcmcc.biz.pce.pci.vo.PidVo">
+      /** pciSql - selectPidList - 반기인건비확보율 조회 */
+      SELECT *
+      FROM (
+          SELECT
+                 D.VDISPLAYORDER,
+                 B.VDEPTCODE   as "vDeptCode",
+                 C.VTEAMNAME   as "vDeptName",
+                 B.VTEAMCODE as "vTeamCode",
+                 D.VTEAMNAME as "vTeamName",
+                 A.VEMPLNO as "vEmplno",
+                 B.VNAME as "vName",
+                 E.VPOSNAME as "vPosName",
+                 A.VESTICODE,
+
+                 /* 과제건수 */
+                 (SELECT COUNT(DISTINCT SUBSTR(VPROJECTCODE,1,5))
+                    FROM TCA4005
+                   WHERE VEMPLNO = A.VEMPLNO
+                     AND VESTICODE = A.VESTICODE
+                     /* 기여도 0인 경우 제외 */
+                     AND NCONTRIBUTION <![CDATA[ <> ]]> 0
+                 ) AS NPROJECTCNT,
+
+                 /* 참여율 */
+                 (SELECT SUM(NCONTRIBUTION)
+                    FROM TCA4005
+                   WHERE VEMPLNO = A.VEMPLNO
+                     AND VESTICODE = A.VESTICODE
+                 ) AS NCONTRIBUTION,
+
+                 A.NLABORCOST,
+                 F.NAMOUNT
+          FROM
+                 /* 집계 */
+                 ( SELECT VESTICODE, VEMPLNO, SUM(NLABORCOST) NLABORCOST
+                     FROM TCA4007
+                    WHERE VESTICODE IN (#{vEstiCode1}, #{vEstiCode2})
+                    GROUP BY VESTICODE, VEMPLNO
+                 ) A,
+                 TAA2101 B,
+                 TAZ2001 C,
+                 TAZ2001 D,
+                 TAZ2003 E,
+                 TCA4008 F
+          WHERE A.VEMPLNO        = B.VEMPLNO
+            AND B.VDEPTCODE   = C.VTEAMCODE(+)
+            AND B.VTEAMCODE   = D.VTEAMCODE(+)
+            AND B.VPOSCODE    = E.VPOSCODE
+            AND A.VEMPLNO       = F.VEMPLNO
+            AND A.VESTICODE     = F.VESTICODE
+
+      )
+      PIVOT (
+          MAX(NPROJECTCNT)   AS "nProjectCnt",
+          MAX(NCONTRIBUTION) AS "nContribution",
+          MAX(NLABORCOST)    AS "nLaborCost",
+          MAX(NAMOUNT)       AS "nAmount"
+          FOR VESTICODE IN (
+              '${vEstiCode1}' AS E1,
+              '${vEstiCode2}' AS E2
+          )
+      )
+      ORDER BY VDISPLAYORDER ASC
+   </select>
+
+   <select id="selectPieList" parameterType="java.util.HashMap" resultType="kr.re.iae.pcmcc.biz.pce.pci.vo.PidVo">
+      /** pciSql - selectPieList - 연간인건비확보율 조회 */
+      SELECT *
+      FROM (
+          SELECT
+              D.VDISPLAYORDER,
+              B.VDEPTCODE AS "vDeptCode",
+              C.VTEAMNAME AS "vDeptName",
+              B.VTEAMCODE AS "vTeamCode",
+              D.VTEAMNAME AS "vTeamName",
+              B.VEMPLNO   AS "vEmplno",
+              B.VNAME     AS "vName",
+              E.VPOSNAME  AS "vPosName",
+              X.HALF,
+              X.NPROJECTCNT,
+              X.NCONTRIBUTION,
+              X.NLABORCOST,
+              X.NAMOUNT
+          FROM
+              (
+                  SELECT
+                      VEMPLNO,
+                      HALF,
+                      SUM(NLABORCOST)     AS NLABORCOST,
+                      SUM(NAMOUNT)        AS NAMOUNT,
+                      SUM(NPROJECTCNT)    AS NPROJECTCNT,
+                      SUM(NCONTRIBUTION)  AS NCONTRIBUTION
+                  FROM (
+                      /* TCA4007: 인건비 확보액 */
+                      SELECT
+                          A.VEMPLNO,
+                          CASE WHEN A.VESTICODE IN ('${vYear}-01', '${vYear}-02') THEN 'E1'
+                               WHEN A.VESTICODE IN ('${vYear}-03', '${vYear}-04') THEN 'E2'
+                          END AS HALF,
+                          A.NLABORCOST AS NLABORCOST,
+                          0 AS NAMOUNT,
+                          0 AS NPROJECTCNT,
+                          0 AS NCONTRIBUTION
+                      FROM TCA4007 A
+                      WHERE A.VESTICODE IN ('${vYear}-01', '${vYear}-02', '${vYear}-03', '${vYear}-04')
+
+                      UNION ALL
+
+                      /* TCA4008: 개인별 인건비 */
+                      SELECT
+                          F.VEMPLNO,
+                          CASE WHEN F.VESTICODE IN ('${vYear}-01', '${vYear}-02') THEN 'E1'
+                               WHEN F.VESTICODE IN ('${vYear}-03', '${vYear}-04') THEN 'E2'
+                          END AS HALF,
+                          0 AS NLABORCOST,
+                          F.NAMOUNT AS NAMOUNT,
+                          0 AS NPROJECTCNT,
+                          0 AS NCONTRIBUTION
+                      FROM TCA4008 F
+                      WHERE F.VESTICODE IN ('${vYear}-01', '${vYear}-02', '${vYear}-03', '${vYear}-04')
+
+                      UNION ALL
+
+                      /* 4005: 과제건수/기여율(반기 합계) - 0 제외 */
+                      SELECT
+                          P.VEMPLNO,
+                          CASE WHEN P.VESTICODE IN ('${vYear}-01', '${vYear}-02') THEN 'E1'
+                               WHEN P.VESTICODE IN ('${vYear}-03', '${vYear}-04') THEN 'E2'
+                          END AS HALF,
+                          0 AS NLABORCOST,
+                          0 AS NAMOUNT,
+                          COUNT(DISTINCT SUBSTR(P.VPROJECTCODE,1,5)) AS NPROJECTCNT,
+                          SUM(P.NCONTRIBUTION) AS NCONTRIBUTION
+                      FROM TCA4005 P
+                      WHERE P.VESTICODE IN ('${vYear}-01', '${vYear}-02', '${vYear}-03', '${vYear}-04')
+                        AND P.NCONTRIBUTION <![CDATA[ <> ]]> 0
+                      GROUP BY
+                          P.VEMPLNO,
+                          CASE WHEN P.VESTICODE IN ('${vYear}-01', '${vYear}-02') THEN 'E1'
+                               WHEN P.VESTICODE IN ('${vYear}-03', '${vYear}-04') THEN 'E2'
+                          END
+                  )
+                  GROUP BY VEMPLNO, HALF
+              ) X,
+              TAA2101 B,
+              TAZ2001 C,
+              TAZ2001 D,
+              TAZ2003 E
+          WHERE
+              X.VEMPLNO       = B.VEMPLNO
+              AND B.VDEPTCODE = C.VTEAMCODE(+)
+              AND B.VTEAMCODE = D.VTEAMCODE(+)
+              AND B.VPOSCODE  = E.VPOSCODE
+              AND X.HALF IN ('E1','E2')
+      
+              /* 기여도 0인 경우 제외 */
+              AND EXISTS (
+                  SELECT 1
+                  FROM TCA4005 P2
+                  WHERE P2.VEMPLNO = X.VEMPLNO
+                    AND P2.VESTICODE IN ('${vYear}-01', '${vYear}-02', '${vYear}-03', '${vYear}-04')
+                    AND P2.NCONTRIBUTION <![CDATA[ <> ]]> 0
+                    AND (
+                         (X.HALF = 'E1' AND P2.VESTICODE IN ('${vYear}-01', '${vYear}-02'))
+                      OR (X.HALF = 'E2' AND P2.VESTICODE IN ('${vYear}-03', '${vYear}-04'))
+                    )
+              )
+      )
+      PIVOT (
+         MAX(NPROJECTCNT)   AS "nProjectCnt",
+         MAX(NCONTRIBUTION) AS "nContribution",
+         MAX(NLABORCOST)    AS "nLaborCost",
+         MAX(NAMOUNT)       AS "nAmount"
+         FOR HALF IN ('E1' AS E1, 'E2' AS E2)
+      )
+      ORDER BY VDISPLAYORDER
+   </select>
+
+   <select id="selectPifEntrustList" parameterType="java.util.HashMap" resultType="kr.re.iae.pcmcc.biz.pce.pci.vo.PicVo">
+      /** pciSql - selectPifEntrustList - 내부위탁과제 조회 */
+      SELECT DISTINCT 
+           A.VPROJECTCODE as "vProjectCode"
+         , B.VKEYPROJECTNAME as "vProjectName"
+         , B.VMANAGER as "vEmplno"
+         , (
+              SELECT
+                 VNAME
+              FROM
+                 TAA2101
+              WHERE
+                 VEMPLNO = B.vmanager
+           ) as "vName"
+      FROM TCA2028 A, TCZ2003 B
+      WHERE A.VENTRUSTYEAR = #{vYear} 
+         AND SUBSTR(A.VPROJECTCODE, 1, 5) = B.VKEYPROJECTCODE
+      ORDER BY A.VPROJECTCODE
+   </select>
+
+   <update id="updateEntrust" parameterType="java.util.HashMap">
+      /** pciSql - updateEntrust - 내부위탁과제 인건비 업데이트 */
+      UPDATE TCA4012
+      <set>
+         NDIRECTAMOUNT = NDIRECTAMOUNT * 1.3,
+         NAMOUNT = (NDIRECTAMOUNT * 1.3) + NINDIRECTAMOUNT
+      </set>
+      <where>
+             VESTICODE = #{vEstiCode}
+         AND VPROJECTCODE IN
+         <foreach collection="projectCodeList" item="projectCode" open="(" separator="," close=")">
+            #{projectCode}
+         </foreach>
+      </where>
+   </update>
+</mapper>

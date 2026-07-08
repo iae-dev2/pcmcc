@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE xml>
+<Configuration xmlns:log4j="http://jakarta.apache.org/log4j/">
+
+   <Appenders>
+      <!-- 콜솔 -->
+      <Console name="console" target="SYSTEM_OUT">
+         <PatternLayout pattern="%d-5p: %c - %m%n" />
+      </Console>
+   </Appenders>
+
+   <Loggers>
+      <Logger name="kr.re.iae" level="error" additivity="false">
+      <!-- <Logger name="kr.re.iae" level="debug" additivity="false"> -->
+         <AppenderRef ref="console" />
+      </Logger>
+   
+      <Logger name="java.sql" level="debug" additivity="false">
+         <AppenderRef ref="console" />
+      </Logger>
+
+      <Logger name="jdbc.sqltiming" level="debug" additivity="false">
+         <AppenderRef ref="console" />
+      </Logger>
+
+      <Logger name="org.springframework" level="info" additivity="false">
+         <AppenderRef ref="console" />
+      </Logger>
+   </Loggers>
+
+</Configuration>

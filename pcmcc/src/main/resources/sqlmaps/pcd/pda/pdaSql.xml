@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.iae.pcmcc.biz.pcd.pda">
+
+<!--
+   => [[PCM] commonSql - selectEstiCodeList - 공통코드 조회 > 평가코드 일반]로 대체
+   => [[PCM] commonSql - selectProjectCodeList - 공통코드 조회 > 과제코드]로 대체
+-->
+
+   <select id="selectProjectEmpList" parameterType="java.util.HashMap" resultType="kr.re.iae.pcmcc.biz.pcd.pda.vo.EmpVo">
+      /** pdaSql - selectProjectEmpList - 참여연구원 기여율 목록 조회 */
+      SELECT
+           A.VESTICODE       as "vEstiCode"
+         , A.VPROJECTCODE    as "vProjectCode"
+         , A.VEMPLNO         as "vEmplNo"
+         , B.VNAME           as "vName"
+         , C.VTEAMNAME       as "vDeptName"
+         , D.VTEAMNAME       as "vTeamName"
+         , E.VPOSNAME        as "vPosName"
+         , A.NCONTRIBUTION   as "nContribution"
+         , A.VCONTENT        as "vContent"
+         , A.VCONFIRM        as "vConfirm"
+         , A.VFINISH         as "vFinish"
+      FROM
+         TCA4005 A,
+         TCA4002 F,
+         TAA2101 B,
+         (SELECT VTEAMCODE, VTEAMNAME FROM TAZ2001 WHERE VTEAMFLAG IN ('1', '2')) C,
+         (SELECT VTEAMCODE, VTEAMNAME FROM TAZ2001 WHERE VTEAMFLAG = '3' ORDER BY VHIGHTEAM, VTEAMCODE) D,
+         (SELECT VPOSCODE, VPOSNAME, VGRADENAME FROM TAZ2003) E
+      <where>
+             A.VESTICODE = #{vEstiCode}
+         AND A.VPROJECTCODE = #{vProjectCode}
+         AND A.VESTICODE = F.VESTICODE
+         AND A.VEMPLNO = F.VEMPLNO
+         AND F.VESTIYN = 'Y'
+         AND A.VEMPLNO = B.VEMPLNO
+         AND B.VDEPTCODE = C.VTEAMCODE(+)
+         AND B.VTEAMCODE = D.VTEAMCODE(+)
+         AND B.VPOSCODE = E.VPOSCODE(+)
+      </where>
+      ORDER BY B.VDEPTCODE, B.VTEAMCODE, B.VPOSCODE, B.NESTIPOINT DESC
+   </select>
+
+   <select id="selectReview" parameterType="java.util.HashMap" resultType="string">
+      /** pdaSql - selectReview - 평가의견 조회 */
+      SELECT
+         VREVIEWCONTENT   as "vReviewContent"
+      FROM
+         TCA4006
+      <where>
+             VESTICODE = #{vEstiCode}
+         AND VPROJECTCODE = #{vProjectCode}
+         AND NSEQNO = (
+                       SELECT
+                          MAX(NSEQNO)
+                       FROM
+                          TCA4006
+                       WHERE
+                              VESTICODE = #{vEstiCode}
+                          AND VPROJECTCODE = #{vProjectCode}
+                    )
+      </where>
+   </select>
+
+   <insert id="insertReview" parameterType="java.util.HashMap">
+      /** pdaSql - insertReview - 평가의견 저장 */
+      <selectKey resultType="int" keyProperty="nSeqNo" order="BEFORE">
+         SELECT
+            NVL(MAX(NSEQNO), 0) + 1   as "nSeqNo"
+         FROM
+            TCA4006
+         <where>
+                VESTICODE = #{vEstiCode}
+            AND VPROJECTCODE = #{vProjectCode}
+         </where>
+      </selectKey>
+
+      INSERT INTO
+         TCA4006
+         (
+              VESTICODE
+            , VPROJECTCODE
+            , NSEQNO
+            , VREVIEWCONTENT
+         )
+      VALUES
+         (
+              #{vEstiCode}
+            , #{vProjectCode}
+            , #{nSeqNo}
+            , #{vReviewContent}
+         )
+   </insert>
+
+   <update id="updateEstiStep3" parameterType="java.util.HashMap">
+      /** pdaSql - updateEstiStep3 - 평가자가 반려 */
+      UPDATE TCA4003
+         SET
+            VESTISTEP = '3'
+      <where>
+             VESTICODE = #{vEstiCode}
+         AND VPROJECTCODE = #{vProjectCode}
+         AND VPROJECTEVA = #{vProjectEva}
+      </where>
+   </update>
+
+   <update id="updateEstiStep4" parameterType="java.util.HashMap">
+      /** pdaSql - updateEstiStep4 - 평가자가 완료(승인) */
+      UPDATE TCA4003
+         SET
+            VESTISTEP = '4'
+      <where>
+             VESTICODE = #{vEstiCode}
+         AND VPROJECTCODE = #{vProjectCode}
+         AND VPROJECTEVA = #{vProjectEva}
+      </where>
+   </update>
+
+</mapper>

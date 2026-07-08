@@ -1,0 +1,280 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.iae.pcmcc.biz.com.commonSql">
+
+   <select id="selectEstiCodeList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+      /** [PCM] commonSql - selectEstiCodeList - 공통코드 조회 > 평가코드 일반 */
+      SELECT
+           VESTICODE         as "vEstiCode"       /* 01_평가코드      */
+         , VESTICODENAME     as "vEstiCodeName"   /* 02_설명          */
+         , VESTICODEVIEW     as "vEstiCodeView"   /* 03_평가코드 View */
+         , VESTICODEUPDATE   as "vEstiCodeUpdate" /* 04_평가코드 갱신 */
+      FROM
+         TCA4001
+      <where>
+         AND VESTICODEVIEW = 'Y'
+      </where>
+      ORDER BY VESTICODE DESC
+   </select>
+
+   <select id="selectProjectCodeList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+      /** [PCM] commonSql - selectProjectCodeList - 공통코드 조회 > 과제코드 */
+      SELECT
+           B.VESTICODE          as "vEstiCode"        /* 01_평가코드               */
+         , B.VPROJECTCODE       as "vProjectCode"     /* 02_과제코드               */
+         , B.VPROJECTNAME       as "vProjectName"     /* 03_과제명                 */
+         , B.VDEPTNAME          as "vDeptName"        /* 04_센터명                 */
+         , B.VGOVNAME           as "vGovName"         /* 05_부처명                 */
+         , B.VPROJECTDIVISION   as "vProjectDivision" /* 06_사업명                 */
+         , B.VTOTSTARTDATE      as "vTotStartDate"    /* 07_총과제시작일           */
+         , B.VTOTENDDATE        as "vTotEndDate"      /* 08_총과제종료일           */
+         , B.VSTARTDATE         as "vStartDate"       /* 09_과제시작일             */
+         , B.VENDDATE           as "vEndDate"         /* 10_과제종료일             */
+         , B.VPROJECTPM         as "vProjectPm"       /* 11_과제 PM                */
+         , (
+            SELECT
+               A.VNAME
+            FROM
+               TCA4002 A
+            WHERE
+                   A.VESTICODE = B.VESTICODE
+               AND A.VEMPLNO = B.VPROJECTPM
+           )                    as "vProjectPmName"   /* 12_과제 PM명              */
+         , B.VPROJECTEVA        as "vProjectEva"      /* 13_과제 평가자            */
+         , (
+            SELECT
+               A.VNAME
+            FROM
+               TCA4002 A
+            WHERE
+                   A.VESTICODE = B.VESTICODE
+               AND A.VEMPLNO = B.VPROJECTEVA
+           )                    as "vProjectEvaName"   /* 14_과제 평가자명         */
+         , B.VPROJECTGOAL       as "vProjectGoal"      /* 15_과제 목표             */
+         , B.VPROJECTMILESTONE  as "vProjectMilestone" /* 16_평가 기간내 Milestone */
+         , B.VESTISTEP          as "vEstiStep"         /* 17_과제 진행단계         */
+         , (
+            SELECT
+               DECODE(INSTR(SUBSTR(XMLAGG(XMLELEMENT(A, NVL(A.VCONFIRM, 'N'))).EXTRACT('//text()'),1), 'N'), 0, 'Y', 'N')
+            FROM
+               TCA4005 A
+            WHERE
+                   A.VESTICODE = B.VESTICODE
+               AND A.VPROJECTCODE = B.VPROJECTCODE
+           )                    as "vConfirm"          /* 18_확인여부              */
+         , (
+            SELECT
+               DECODE(INSTR(SUBSTR(XMLAGG(XMLELEMENT(A, NVL(A.VFINISH, 'N'))).EXTRACT('//text()'),1), 'N'), 0, 'Y', 'N')
+            FROM
+               TCA4005 A
+            WHERE
+                   A.VESTICODE = B.VESTICODE
+               AND A.VPROJECTCODE = B.VPROJECTCODE
+           )                    as "vFinish"           /* 19_완료여부              */
+      FROM
+         TCA4003 B
+      <where>
+             B.VESTICODE = #{vEstiCode}
+        <if test="vProjectCode != null">
+         AND B.VPROJECTCODE = #{vProjectCode}
+        </if>
+        <if test="vProjectPm != null">
+         AND B.VPROJECTPM = #{vProjectPm}
+        </if>
+        <if test="vProjectEva != null">
+         AND B.VPROJECTEVA = #{vProjectEva}
+        </if>
+      </where>
+      ORDER BY B.VPROJECTCODE
+   </select>
+
+   <select id="selectHrInfo" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+      /** [PCM] commonSql - selectHrInfo - 인사정보 조회 > 사원 */
+      SELECT
+           A.VEMPLNO          as "vEmplNo"
+         , A.VNAME            as "vName"
+         , A.VDEPTCODE        as "vDeptCode"
+         , B.VTEAMNAME        as "vDeptName"
+         , A.VTEAMCODE        as "vTeamCode"
+         , C.VTEAMNAME        as "vTeamName"
+         , A.VPOSCODE         as "vPosCode"
+         , D.VPOSNAME         as "vPosName"
+         , A.VDUTYCODE        as "vDutyCode"
+         , A.VGRADECODE       as "vGradeCode"
+         , D.VGRADENAME       as "vGradeName"
+         , E.VRESINO          as "vResiNo"
+         , E.VRESIDENCEADDR   as "vResidenceAddr"
+         , E.VBIRTH           as "dBirth"
+         , A.VENTER           as "dEnter"
+         , A.VRETIRE          as "dRetire"
+         , A.VJOBCLASS        as "vJobClass"
+        <if test="vEmplNo != null and vEmplNo != ''">
+         , NVL(
+                (
+                   SELECT
+                      CASE WHEN P.VESTIYN = 'Y' THEN
+                                CASE WHEN Q.VESTICODEUPDATE = 'N' THEN
+                                          DECODE(P.VGRADE, 'A', P.VGRADE, 'E')
+                                     ELSE NVL(P.VGRADE, 'X')
+                                 END
+                           ELSE
+                                DECODE(P.VGRADE, 'A', P.VGRADE, 'X')
+                      END
+                   FROM TCA4002 P,
+                      (
+                        SELECT
+                            VESTICODE, VESTICODEUPDATE
+                         FROM
+                            TCA4001
+                     <where>
+                            ROWNUM = '1'
+                     </where>
+                        ORDER BY VESTICODE DESC
+                      ) Q
+                  <where>
+                        P.VESTICODE = Q.VESTICODE
+                    AND P.VEMPLNO = #{vEmplNo}
+                  </where>
+                ),
+           'X')               as "vMenuGrade"
+        </if>
+      FROM
+         TAA2101 A,
+         (SELECT VTEAMCODE, VTEAMNAME FROM TAZ2001 WHERE VTEAMFLAG IN ('1', '2')) B,
+         (SELECT VTEAMCODE, VTEAMNAME FROM TAZ2001 WHERE VTEAMFLAG = '3' ORDER BY VHIGHTEAM, VTEAMCODE) C,
+         (SELECT VPOSCODE, VPOSNAME, VGRADENAME FROM TAZ2003) D,
+         TAA2102 E
+      <where>
+         AND A.VDEPTCODE = B.VTEAMCODE(+)
+         AND A.VTEAMCODE = C.VTEAMCODE(+)
+         AND A.VPOSCODE = D.VPOSCODE(+)
+         AND A.VEMPLNO = E.VEMPLNO(+)
+       <choose>
+        <when test="vName != null and vName != ''">
+         AND A.VNAME LIKE '%'|| #{vName} ||'%'
+        </when>
+        <when test="vEmpLen == 7">
+         AND A.VEMPLNO = #{vEmplNo}
+        </when>
+        <when test="vEmplNo != null and vEmplNo != ''">
+         AND A.VEMPLNO LIKE '%'|| #{vEmplNo} || '%'
+        </when>
+        <when test='vRetire == "N"'>
+         /** AND (A.VRETIREYN != 'Y' OR A.VRETIREYN IS NULL) */
+         AND A.VRETIRE IS NULL
+        </when>
+       </choose>
+      </where>
+      ORDER BY A.VDEPTCODE, A.VTEAMCODE, A.VPOSCODE, A.NESTIPOINT DESC
+   </select>
+
+   <select id="selectEmployee" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+      /** [PCM] commonSql - selectEmployee - 사원 코드, 사원 이름 가져오기 */
+      SELECT
+           VEMPLNO   as "vEmplNo"
+         , VNAME     as "vName"
+      FROM
+         TAA2101
+      <where>
+             VRETIRE IS NULL
+       <choose>
+        <when test="vEmplNo != null">
+         AND VEMPLNO LIKE '%'|| #{vEmplNo} || '%'
+        </when>
+        <otherwise>
+         AND VNAME LIKE '%'|| #{vName} || '%'
+        </otherwise>
+       </choose>
+       <!-- AND (VNAME = #{PARAM} OR VEMPLNO = #{PARAM} OR VNAME = #{PARAM} OR
+          VEMPLNO = #{PARAM}) -->
+      </where>
+   </select>
+
+   <select id="selectKeyProject" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+      /** [PCM] commonSql - selectKeyProject - 총괄 과제코드 조회 */
+      SELECT
+           A.VKEYPROJECTCODE   as "vKeyProjectCode"
+         , A.VKEYPROJECTNAME   as "vKeyProjectName"
+      FROM
+         TCZ2003 A
+      ORDER BY A.VKEYPROJECTCODE
+   </select>
+
+   <select id="selectProject" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+      /** [PCM] commonSql - selectProject - 과제코드 조회 */
+      SELECT
+           B.VPROJECTCODE       as "vProjectCode"
+         , A.VKEYPROJECTNAME    as "vKeyProjectName"
+         , A.VKEYPROJECTCODE    as "vKeyProjectCode"
+         , C.VTEAMNAME          as "vDeptName"
+         , A.VPROORGNAME        as "vGovName"
+         , A.VPROJECTDIVISION   as "vProjectDivision"
+         , A.VSTARTDATE         as "vTotStartDate"
+         , A.VENDDATE           as "vTotEndDate"
+         , B.VSTARTDATE         as "vStartDate"
+         , B.VENDDATE           as "vEndDate"
+         , A.VMANAGER           as "vProjectPm"
+         , D.VNAME              as "vProjectPmName"
+         , A.VGOAL              as "vProjectGoal"
+      FROM
+         TCZ2003 A,
+         TCZ2006 B,
+         (SELECT VTEAMCODE, VTEAMNAME FROM TAZ2001 WHERE VUSEYN = 'Y' AND VTEAMFLAG IN ('1', '2')) C,
+         TAA2101 D
+      <where>
+         AND A.VKEYPROJECTCODE = B.VKEYPROJECTCODE
+         AND B.VPROJECTSTEP = '3'
+         AND A.VDEPTCODE = C.VTEAMCODE(+)
+         AND A.VMANAGER = D.VEMPLNO
+      </where>
+      ORDER BY B.VPROJECTCODE
+   </select>
+
+   <select id="checkProject" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+      /** [PCM] commonSql - checkProject - 차수과제코드 체크 */
+      SELECT
+           B.VPROJECTCODE      as "vProjectCode"
+         , A.VKEYPROJECTNAME   as "vKeyProjectName"
+         , A.VKEYPROJECTCODE   as "vKeyProjectCode"
+         , B.VSTARTDATE        as "vStartDate"
+         , B.VENDDATE          as "vEndDate"
+      FROM
+         TCZ2003 A,
+         TCZ2006 B
+      <where>
+         AND A.VKEYPROJECTCODE = B.VKEYPROJECTCODE
+         AND B.VPROJECTSTEP = '3'
+         AND B.VPROJECTCODE = #{vProjectCode}
+      </where>
+   </select>
+
+   <select id="selectFileSeq" parameterType="java.util.HashMap" resultType="int">
+      /** [PCM] commonSql - selectFileSeq - 파일일련번호를 위한 Sequence 조회 */
+      SELECT
+         LPAD(FILE_SEQ.NEXTVAL,3,0)   as "fileSeq"
+      FROM
+         DUAL
+   </select>
+
+   <select id="selectHrDept" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+      /** [PCM] commonSql - selectHrDept - 인사정보 조회 - 부서 */
+      SELECT
+           VTEAMCODE   as "vDeptCode"
+         , VTEAMNAME   as "vDeptName"
+      FROM
+         TAZ2001
+      <where>
+             VUSEYN = 'Y'
+       <choose>
+        <when test="vHighTeam != null and vHighTeam != ''">
+         AND ((VTEAMFLAG = '1' AND VTEAMCODE = #{vHighTeam}) OR (VTEAMFLAG = '2' AND VHIGHTEAM = #{vHighTeam}))
+        </when>
+        <otherwise>
+         AND VTEAMFLAG IN ('1', '2')
+        </otherwise>
+       </choose>
+      </where>
+      ORDER BY VDISPLAYORDER
+   </select>
+
+</mapper>

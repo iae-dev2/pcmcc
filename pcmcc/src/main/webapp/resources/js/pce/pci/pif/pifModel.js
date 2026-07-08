@@ -1,0 +1,6 @@
+var PifModel = function() {
+
+   return {
+   }
+
+}

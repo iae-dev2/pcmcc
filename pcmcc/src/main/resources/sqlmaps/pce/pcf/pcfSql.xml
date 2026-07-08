@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.iae.pcmcc.biz.pce.pcf">
+
+   <!-- 게시물 목록 -->
+   <select id="selectBoard" resultType="kr.re.iae.pcmcc.biz.pce.pcf.vo.BoardVo">
+      /** pcfSql - selectBoard - 게시물 목록 조회 */
+      SELECT
+           A.NSEQNO      as "nSeqNo"      /* 01_게시판 일련번호 */
+         , A.VEMPLNO     as "vEmplNo"     /* 02_작성자 사번     */
+         , A.VNAME       as "vName"       /* 03_작성자 성명     */
+         , A.VSUBJECT    as "vSubject"    /* 04_제목            */
+         , A.VCONTENT    as "vContent"    /* 05_내용            */
+         , A.NHIT        as "nHit"        /* 07_조회수          */
+         , A.VYYYYMMDD   as "vYyyymmdd"   /* 08_작성일자        */
+         , A.VHHMMSS     as "vHhmmss"     /* 09_작성일시        */
+         , A.NREF        as "nRef"        /* 10_                */
+         , A.NSTEP       as "nStep"       /* 11_                */
+         , A.NLEV        as "nLev"        /* 12_                */
+         , A.NPSEQNO     as "nPseqNo"     /* 13_                */
+         , A.NREPLY      as "nReply"      /* 14_                */
+         , B.nFileSeqNo  as "nFileSeqNo"  /* 15_파일 일련번호   */
+      FROM
+         TCA4010 A,
+         (
+            SELECT
+                 NSEQNO
+               , MIN(NFILESEQNO)   as nFileSeqNo
+            FROM
+               TCA4011
+            GROUP BY NSEQNO
+         ) B
+      <where>
+         A.NSEQNO = B.NSEQNO(+)
+      </where>
+      ORDER BY A.NSEQNO DESC
+   </select>
+
+   <!-- 비밀번호 조회 -->
+   <select id="selectPassword" parameterType="java.util.HashMap" resultType="kr.re.iae.pcmcc.biz.pce.pcf.vo.BoardVo">
+      /** pcfSql - selectPassword - 비밀번호 조회 */
+      SELECT
+         VPASSWORD   as nPassword
+      FROM
+         TCA4010
+      <where>
+         NSEQNO = #{nSeqNo}
+      </where>
+   </select>
+
+   <!-- 첨부파일 조회 -->
+   <select id="selectBoardFile" parameterType="kr.re.iae.pcmcc.biz.pce.pcf.vo.FileVo" resultType="kr.re.iae.pcmcc.biz.pce.pcf.vo.FileVo">
+      /** pcfSql - selectBoardFile - 첨부파일 조회 */
+      SELECT
+           NSEQNO          as "nSeqNo"
+         , NFILESEQNO      as "nFileSeqNo"
+         , VFILENAME       as "vFileName"
+         , VTEMPFILENAME   as "vTempFileName"
+         , VFILEPATH       as "vFilePath"
+         , VFILEEXTENSION  as "vFileExtension"
+         , VPDFFILENAME    as "vPdfFileName"
+         , VPDFCREATEDATE  as "vPdfCreateDate"
+      FROM
+         TCA4011
+      <where>
+         NSEQNO = #{nSeqNo}
+        <if test="nFileSeqNo != 0">
+         AND NFILESEQNO = #{nFileSeqNo}
+        </if>
+      </where>
+   </select>
+
+   <select id="selectBoardSeq" resultType="string">
+      SELECT NVL(MAX(NSEQNO) + 1, 1) FROM TCA4010
+   </select>
+
+   <!-- 새로운 게시물을 입력 -->
+   <insert id="insertBoard" parameterType="kr.re.iae.pcmcc.biz.pce.pcf.vo.BoardVo">
+      /** pcfSql - insertBoard - 새로운 게시물을 입력 */
+      <!-- 게시판 일련번호 -->
+      <selectKey resultType="int" keyProperty="nSeqNo" order="BEFORE">
+         SELECT NVL(MAX(NSEQNO) + 1, 1) FROM TCA4010
+      </selectKey>
+
+      <!-- 게시판 답글번호 -->
+      <!-- <selectKey resultType="int" keyProperty="nRef" order="BEFORE">
+         SELECT NVL(MAX(NREF) + 1, 1) FROM TCA4010
+      </selectKey> -->
+
+      INSERT INTO TCA4010 (
+           NSEQNO
+         , VEMPLNO
+         , VNAME
+         , VSUBJECT
+         , VCONTENT
+         , NHIT
+         , VYYYYMMDD
+         , VHHMMSS
+         , NREF
+         , NSTEP
+         , NLEV
+         , NPSEQNO
+         , NREPLY
+      ) VALUES
+      (
+           #{nSeqNo,   jdbcType=INTEGER}
+         , #{vEmplNo,  jdbcType=VARCHAR}
+         , #{vName,    jdbcType=VARCHAR}
+         , #{vSubject, jdbcType=VARCHAR}
+         , #{vContent, jdbcType=VARCHAR}
+         , #{nHit,     jdbcType=INTEGER}
+         , TO_CHAR(SYSDATE,'YYYY-MM-DD')
+         , TO_CHAR(SYSDATE, 'HH24:MI:SS')
+         , #{nRef,     jdbcType=INTEGER}
+         , #{nStep,    jdbcType=INTEGER}
+         , #{nLev,     jdbcType=INTEGER}
+         , #{nPseqNo,  jdbcType=INTEGER}
+         , #{nReply,   jdbcType=INTEGER}
+      )
+   </insert>
+
+   <!-- 게시판 첨부파일 저장  -->
+   <insert id="insertBoardFile" parameterType="kr.re.iae.pcmcc.biz.pce.pcf.vo.FileVo">
+      /** pcfSql - insertBoardFile - 게시판 첨부파일 저장 */
+      <!-- 첨부파일 일련번호 -->
+      <selectKey resultType="int" keyProperty="nFileSeqNo" order="BEFORE">
+         SELECT NVL(MAX(NFILESEQNO) + 1, 1) FROM TCA4011 WHERE NSEQNO = #{nSeqNo}
+      </selectKey>
+
+      /** pcfSql - insertBoardFile - 게시판 입력, 답변 */
+      INSERT INTO TCA4011 (
+           NSEQNO
+         , NFILESEQNO
+         , VFILENAME
+         , VTEMPFILENAME
+         , VFILEPATH
+         , VFILEEXTENSION
+      ) VALUES
+      (
+           #{nSeqNo,         jdbcType=INTEGER}
+         , #{nFileSeqNo,     jdbcType=INTEGER}
+         , #{vFileName,      jdbcType=VARCHAR}
+         , #{vTempFileName,  jdbcType=VARCHAR}
+         , #{vFilePath,      jdbcType=VARCHAR}
+         , #{vFileExtension, jdbcType=VARCHAR}
+      )
+   </insert>
+
+   <!-- 게시물 수정 -->
+   <update id="updateBoard" parameterType="kr.re.iae.pcmcc.biz.pce.pcf.vo.BoardVo">
+      /** pcfSql - updateBoard - 게시물 내용을 수정 */
+      UPDATE TCA4010
+      <set>
+         <if test="vName     != null"> VNAME     = #{vName}    , </if>
+         <if test="vSubject  != null"> VSUBJECT  = #{vSubject} , </if>
+         <if test="vContent  != null"> VCONTENT  = #{vContent} , </if>
+         <if test="vPassword != null"> VPASSWORD = #{vPassword}, </if>
+      </set>
+      <where>
+         NSEQNO = #{nSeqNo}
+      </where>
+   </update>
+
+   <!-- 게시물 삭제-->
+   <delete id="deleteBoard" parameterType="java.util.HashMap">
+      /** pcfSql - deleteBoard - 게시물을 삭제 */
+      DELETE FROM TCA4010
+      <where>
+         NSEQNO = #{nSeqNo}
+      </where>
+   </delete>
+
+   <!-- 게시물 첨부파일 삭제-->
+   <delete id="deleteBoardFile" parameterType="kr.re.iae.pcmcc.biz.pce.pcf.vo.FileVo">
+      /** pcfSql - deleteBoardFile - 게시물 첨부파일을 삭제 */
+      DELETE FROM TCA4011
+      <where>
+             NSEQNO = #{nSeqNo}
+         AND NFILESEQNO = #{nFileSeqNo}
+      </where>
+   </delete>
+
+   <!-- 게시물 첨부파일 수정-->
+   <delete id="updateBoardFile" parameterType="kr.re.iae.pcmcc.biz.pce.pcf.vo.FileVo">
+      /** pcfSql - updateBoardFile - 게시물 첨부파일을 수정 */
+      UPDATE TCA4011
+      <set>
+         <if test="vPdfFileName   != null"> VPDFFILENAME   = #{vPdfFileName}   , </if>
+         <if test="vPdfFileName   != null"> VPDFCREATEDATE = TO_CHAR(SYSDATE, 'YYYY-MM-DD HH24:MI:SS') , </if>
+      </set>
+      <where>
+         NSEQNO = #{nSeqNo}
+         AND NFILESEQNO = #{nFileSeqNo}
+      </where>
+   </delete>
+
+   <!-- 조회수 증가 -->
+   <update id="updateHitCount" parameterType="java.util.HashMap">
+      /** pcfSql - updateHitCount - 게시물 조회수를 증가 */
+      UPDATE
+         TCA4010
+      <set>
+         NHIT = NHIT + 1
+      </set>
+      <where>
+         NSEQNO = #{nSeqNo}
+      </where>
+   </update>
+
+</mapper>

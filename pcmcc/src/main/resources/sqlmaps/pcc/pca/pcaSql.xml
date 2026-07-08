@@ -1,0 +1,388 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.iae.pcmcc.biz.pcc.pca">
+
+   <select id="selectPrjGoal" parameterType="java.util.HashMap" resultType="kr.re.iae.pcmcc.biz.pcc.pca.vo.PrjVo">
+      /** pcaSql - selectPrjGoal - 과제목표 조회 */
+      SELECT
+           VESTICODE           as "vEstiCode"         /* 평가코드              */
+         , VPROJECTGOAL        as "vProjectGoal"      /* 과제목표              */
+         , VPROJECTMILESTONE   as "vProjectMileStone" /* 평가 기간내 Milestone */
+      FROM 
+         TCA4003
+      <where>
+             VPROJECTCODE = #{vProjectCode}
+         AND VESTICODE = #{vEstiCode}
+      </where>
+   </select>
+
+   <select id="selectOldGoal" parameterType="java.util.HashMap" resultType="kr.re.iae.pcmcc.biz.pcc.pca.vo.PrjVo">
+      /** pcaSql - selectReview - 전분기 과제목표 조회 */
+      SELECT
+           VESTICODE           as "vEstiCode"         /* 평가코드              */
+         , VPROJECTGOAL        as "vProjectGoal"      /* 과제목표              */
+         , VPROJECTMILESTONE   as "vProjectMileStone" /* 평가 기간내 Milestone */
+      FROM (
+              SELECT
+                   VESTICODE
+                 , VPROJECTGOAL
+                 , VPROJECTMILESTONE
+              FROM
+                 TCA4003
+              <where>
+                     VPROJECTCODE = #{vProjectCode}
+                 AND VESTICODE NOT IN (#{vEstiCode})
+              </where>
+              ORDER BY VESTICODE DESC
+           )
+      <where>
+         ROWNUM = 1
+      </where>
+   </select>
+
+   <update id="updateProjectGoal" parameterType="kr.re.iae.pcmcc.biz.pcc.pca.vo.PrjVo">
+      /** pcaSql - updateProjectGoal - 과제목표 저장 */
+      UPDATE TCA4003
+      <set>
+         <if test="vProjectGoal      != null"> VPROJECTGOAL      = #{vProjectGoal}     , </if>
+         <if test="vProjectMilestone != null"> VPROJECTMILESTONE = #{vProjectMilestone}, </if>
+      </set>
+      <where>
+             VESTICODE = #{vEstiCode}
+         AND VPROJECTCODE = #{vProejctCode}
+      </where>
+   </update>
+
+   <select id="selectContributionList" parameterType="java.util.HashMap" resultType="kr.re.iae.pcmcc.biz.pcc.pca.vo.EmpVo">
+      /** pcaSql - selectContributionList - 기여도 데이터 조회 */
+      SELECT
+           A.VESTICODE       as "vEstiCode"     /* 평가연도 */
+         , A.VPROJECTCODE    as "vProjectCode"  /* 과제코드 */
+         , A.VEMPLNO         as "vEmplNo"       /* 사번     */
+         , B.VNAME           as "vName"         /* 성명     */
+         , B.VDEPTNAME       as "vDeptName"     /* 부서명   */
+         , B.VTEAMNAME       as "vTeamName"     /* 팀명     */
+         , B.VPOSNAME        as "vPosName"      /* 직위명   */
+         , A.VWORK           as "vWork"         /* 업무     */
+         , A.NCONTRIBUTION   as "nContribution" /* 기여율   */
+         , A.VCONTENT        as "vContent"      /* 평가의견 */
+         , A.VFINISH         as "vFinish"       /* 완료여부 */
+         , A.VCONFIRM        as "vConfirm"      /* 확연여부 */
+      FROM
+         TCA4005 A,
+         TCA4002 B
+      <where>
+             A.VESTICODE = B.VESTICODE
+         AND A.VEMPLNO = B.VEMPLNO
+         AND A.VESTICODE = #{vEstiCode}
+         AND A.VPROJECTCODE = #{vProjectCode}
+         AND B.VESTIYN = 'Y'
+      </where>
+      ORDER BY B.VNAME
+   </select>
+
+   <select id="selectContributionSum" parameterType="java.util.HashMap" resultType="float">
+      /** pcaSql - selectContributionSum - 기여도 합 조회 */
+      SELECT
+         NVL(SUM(a.NCONTRIBUTION), 0)   as "nContribution"
+      FROM
+         TCA4005 A,
+         TCA4002 B
+      <where>
+             A.VESTICODE = B.VESTICODE
+         AND A.VEMPLNO = B.VEMPLNO
+         AND A.VESTICODE = #{vEstiCode}
+         AND A.VPROJECTCODE = #{vProjectCode}
+         AND B.VESTIYN = 'Y'
+      </where>
+   </select>
+
+   <select id="selectWrmDataList" parameterType="java.util.HashMap" resultType="kr.re.iae.pcmcc.biz.pcc.pca.vo.WeekVo">
+      /** pcaSql - selectWrmDataList - 주간업무입력 데이터 조회 */
+      SELECT
+           A.VWEEK          as "vWeek"
+         , A.VPROJECTCODE   as "vProjectCode"
+         , A.VEMPLNO        as "vEmplNo"
+         , A.NSEQNO         as "nSeqNo"
+         , A.VWORKCONTENT   as "vWorkContent"
+         , B."vFileNames"   as "vFileNames"
+      FROM
+         TWR4003 A,
+         (
+            SELECT
+               VWEEK, NSEQNO, LISTAGG(VFILENAME || '->' || NFILESEQNO, '|') WITHIN GROUP(ORDER BY VFILENAME) as "vFileNames"
+            FROM
+               TWR4004
+            <where>
+               AND VEMPLNO = #{vEmplNo}
+               AND (VWEEK LIKE #{vWeek1} || '%' OR VWEEK LIKE #{vWeek2} || '%' OR VWEEK LIKE #{vWeek3} || '%')
+            </where>
+            GROUP BY VWEEK, NSEQNO
+         ) B
+      <where>
+         AND A.VPROJECTCODE = #{vProjectCode}
+         AND A.VEMPLNO = #{vEmplNo}
+         AND A.VWORKTYPE = '1'   /* 실적     */
+         AND A.VJOBTYPE = '2'    /* 과제수행 */
+         AND (A.VWEEK LIKE #{vWeek1} || '%' OR A.VWEEK LIKE #{vWeek2} || '%' OR A.VWEEK LIKE #{vWeek3} || '%')
+         AND A.VWEEK = B.VWEEK(+)
+         AND A.NSEQNO = B.NSEQNO(+)
+      </where>
+      ORDER BY A.VWEEK ASC
+   </select>
+
+   <select id="selectFileInfo" parameterType="kr.re.iae.pcmcc.biz.pcc.pca.vo.WeekFileVo" resultType="kr.re.iae.pcmcc.biz.pcc.pca.vo.WeekFileVo">
+      /** pcaSql - selectFileInfo - 산출물 파일 정보 조회 */
+      SELECT
+           VWEEK            as "vWeek"
+         , VEMPLNO          as "vEmplNo"
+         , NSEQNO           as "nSeqNo"
+         , NFILESEQNO       as "nFileSeqNo"
+         , VFILENAME        as "vFileName"
+         , VTEMPFILENAME    as "vTempFileName"
+         , VFILEPATH        as "vFilePath"
+         , VFILEEXTENSION   as "vFileExtension"
+      FROM
+         TWR4004
+      <where>
+         AND VWEEK = #{vWeek}
+         AND VEMPLNO = #{vEmplNo}
+         AND VWORKTYPE = '1'
+         AND NSEQNO = #{nSeqNo}
+         AND NFILESEQNO = #{nFileSeqNo}
+      </where>
+   </select>
+
+   <delete id="updateWeekFile" parameterType="kr.re.iae.pcmcc.biz.pcc.pca.vo.WeekFileVo">
+      /** pcaSql - updateBoardFile - PDF 변환 여부 수정 */
+      UPDATE TWR4004
+      <set>
+         <if test="vPdfFileName   != null"> VPDFFILENAME   = #{vPdfFileName}   , </if>
+         <if test="vPdfFileName   != null"> VPDFCREATEDATE = TO_CHAR(SYSDATE, 'YYYY-MM-DD HH24:MI:SS') , </if>
+      </set>
+      <where>
+         AND VWEEK = #{vWeek}
+         AND VEMPLNO = #{vEmplNo}
+         AND VWORKTYPE = '1'
+         AND NSEQNO = #{nSeqNo}
+         AND NFILESEQNO = #{nFileSeqNo}
+      </where>
+   </delete>
+
+   <select id="selectDeptNameList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+      /** pcaSql - selectDeptNameList - 부서 조회 */
+      SELECT
+         VTEAMNAME   as "vDeptName"
+      FROM
+         TAZ2001
+      WHERE
+             VUSEYN = 'Y'
+         AND VTEAMFLAG IN ('1', '2')
+         AND VTEAMCODE NOT IN ('AB000', 'EA000', 'EC000', 'ED000')
+      ORDER BY VDISPLAYORDER ASC
+   </select>
+   <!-- AB000: 임원실, EA000: 연구지원본부, EC000: 연구관리센터 , ED000: 경영지원센터   2025-09-30 -->
+
+   <select id="selectAdditionalEmplNoList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+      /** pcaSql - selectAdditionalEmplNoList - 추가할 참여 연구원 조회 */
+      SELECT
+           VESTICODE   as "vEstiCode" /* 평가코드 */
+         , VEMPLNO     as "vEmplNo"   /* 사번     */
+         , VNAME       as "vName"     /* 성명     */
+         , VDEPTNAME   as "vDeptName" /* 센터명   */
+         , VTEAMNAME   as "vTeamName" /* 팀명     */
+         , VPOSNAME    as "vPosName"  /* 직위명   */
+      FROM (
+              SELECT
+                   VESTICODE
+                 , VEMPLNO
+                 , VNAME
+                 , VDEPTNAME
+                 , VTEAMNAME
+                 , VPOSNAME
+              FROM
+                 TCA4002
+              <where>
+                     VESTICODE = #{vEstiCode}
+                 AND VESTIYN = 'Y'
+                 AND VEMPLNO NOT IN (
+                                       SELECT
+                                          VEMPLNO
+                                       FROM
+                                          TCA4005
+                                       <where>
+                                              VESTICODE = #{vEstiCode}
+                                          AND VPROJECTCODE = #{vProjectCode}
+                                       </where>
+                                    )
+              </where>
+           )
+      <where>
+       <choose>
+        <when test="vName != null and vName != ''">
+             VNAME LIKE '%' || #{vName} || '%'
+        </when>
+       </choose>
+       <choose>
+        <when test="vDeptName != null and vDeptName != ''">
+         AND VDEPTNAME LIKE #{vDeptName} || '%'
+        </when>
+       </choose>
+      </where>
+      ORDER BY VNAME
+   </select>
+
+   <insert id="insertEstiEmplNo" parameterType="java.util.HashMap">
+      /** pcaSql - insertEstiEmplNo - 참여연구원 추가 */
+      INSERT INTO
+         TCA4005
+         (
+              VESTICODE
+            , VPROJECTCODE
+            , VEMPLNO
+            , NCONTRIBUTION
+            , VFINISH
+         )
+      VALUES
+         (
+              #{vEstiCode}
+            , #{vProjectCode}
+            , #{vEmplNo}
+            , 0
+            , 'Y'
+         )
+   </insert>
+
+   <delete id="deleteEstiEmplNo" parameterType="java.util.HashMap">
+      /** pcaSql - deleteEstiEmplNo - 참여연구원 삭제 */
+      DELETE FROM TCA4005
+      <where>
+             VESTICODE = #{vEstiCode}
+         AND VPROJECTCODE = #{vProjectCode}
+         AND VEMPLNO = #{vEmplNo}
+      </where>
+   </delete>
+
+   <update id="updateContribution" parameterType="kr.re.iae.pcmcc.biz.pcc.pca.vo.EmpVo">
+      /** pcaSql - updateContribution - 연구원 기여도 저장 */
+      UPDATE
+         TCA4005
+      <set>
+         <if test="nContribution != null"> NCONTRIBUTION = #{nContribution}, </if>
+         <if test="vContent      != null"> VCONTENT      = #{vContent}     , </if>
+      </set>
+      <where>
+             VESTICODE = #{vEstiCode}
+         AND VPROJECTCODE = #{vProjectCode}
+         AND VEMPLNO = #{vEmplNo}
+      </where>
+   </update>
+
+   <update id="updateEstiStep2" parameterType="java.util.HashMap">
+      /** pcaSql - updateEstiStep2 - 기여도 입력완료 처리 */
+      UPDATE
+         TCA4003
+      SET
+         VESTISTEP = '2'
+      <where>
+             VESTICODE = #{vEstiCode}
+         AND VPROJECTCODE = #{vProjectCode}
+         AND VPROJECTPM = #{vProjectPm}
+      </where>
+   </update>
+
+   <update id="updateEstiStep2CheckRetire" parameterType="java.util.HashMap">
+      /** pcaSql - updateEstiStep2CheckRetire - 기여도 입력완료 퇴직자 확인 처리 */
+      MERGE INTO TCA4005 A
+      USING (
+          SELECT VESTICODE, VEMPLNO, VRETIREYN
+            FROM TCA4002
+           WHERE VESTICODE = #{vEstiCode}
+             AND VRETIREYN = 'Y'
+      ) B
+      ON (A.VESTICODE = B.VESTICODE AND A.VEMPLNO = B.VEMPLNO)
+      WHEN MATCHED THEN
+        UPDATE SET A.VCONFIRM = B.VRETIREYN
+         WHERE A.VPROJECTCODE = #{vProjectCode}
+   </update>
+
+   <select id="selectReview" parameterType="java.util.HashMap" resultType="string">
+      /** pcaSql - selectReview - 기여도 검토 의견(평가의견) 조회 */
+      SELECT
+         VREVIEWCONTENT   as "vReviewContent" /* 기여율 검토 의견 */
+      FROM (
+              SELECT
+                   VESTICODE
+                 , VPROJECTCODE
+                 , NSEQNO
+                 , VREVIEWCONTENT
+              FROM
+                 TCA4006
+              <where>
+                     VESTICODE = #{vEstiCode}
+                 AND VPROJECTCODE = #{vProjectCode}
+              </where>
+              ORDER BY NSEQNO DESC
+           )
+      <where>
+         ROWNUM = 1
+      </where>
+   </select>
+
+   <update id="updateEstiStep5" parameterType="java.util.HashMap">
+      /** pcaSql - updateEstiStep5 - 최종 확인 */
+      UPDATE
+         TCA4003
+      SET
+         VESTISTEP = '5'
+      <where>
+             VESTICODE = #{vEstiCode}
+         AND VPROJECTCODE = #{vProjectCode}
+         AND VPROJECTPM = #{vProjectPm}
+      </where>
+   </update>
+
+   <!-- <select id="selectWork" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+      /** pcaSql - selectWork - 업무/기여도/의견 조회 */
+      SELECT
+           A.VESTICODE       as "vEstiCode"     /* 평가연도 */
+         , A.VPROJECTCODE    as "vProjectCode"  /* 과제코드 */
+         , A.VEMPLNO         as "vEmplNo"       /* 사번     */
+         , B.VNAME           as "vName"         /* 성명     */
+         , A.VWORK           as "vWork"         /* 업무     */
+         , A.NCONTRIBUTION   as "nContribution" /* 기여율   */
+         , A.VCONTENT        as "vContent"      /* 평가의견 */
+         , A.VCONFIRM        as "vConfirm"      /* 확인여부 */
+         , A.VFINISH         as "vFinish"       /* 완료여부 */
+      FROM
+         TCA4005 A,
+         TCA4002 B
+      <where>
+             A.VESTICODE = B.VESTICODE
+         AND A.VEMPLNO = B.VEMPLNO
+         AND A.VESTICODE = #{vEstiCode}
+         AND A.VPROJECTCODE = #{vProjectCode}
+         AND A.VEMPLNO = #{vEmplNo}
+         AND B.VESTIYN = 'Y'
+      </where>
+   </select> -->
+
+   <select id="selectEstiEmplNoList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+      /** pcaSql - selectEstiEmplNoList - 평가대상자 조회 */
+      SELECT
+           VESTICODE   as "vEstiCode" /* 평가연도 */
+         , VEMPLNO     as "vEmplNo  " /* 사번     */
+         , VNAME       as "vName    " /* 성명     */
+         , VDEPTNAME   as "vDeptName" /* 센터명   */
+         , VTEAMNAME   as "vTeamName" /* 팀명     */
+         , VPOSNAME    as "vPosName " /* 직위명   */
+      FROM
+         TCA4002
+      <where>
+             VESTICODE = #{vEstiCode}
+         AND VESTIYN = 'Y'
+      </where>
+      ORDER BY NAME
+   </select>
+
+</mapper>

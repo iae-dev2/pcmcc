@@ -1,0 +1,27 @@
+#pop-frame {
+   border: 3px solid #4074df;
+}
+
+.pop-header {
+   background-color: #4074df !important;
+   width: 100%;
+   background-image: none !important;
+}
+
+.pop-header div:first-child{
+   height: px;
+   color: #ffffff;
+   text-align: left;
+   font-size: 20px;
+   padding: 10px 0 10px 70px !important;
+   background: url(/resources/images/pop_blt.gif) no-repeat 50px 55% !important;
+}
+
+.pop-title {
+   height: px;
+   color: #ffffff;
+   text-align: left;
+   font-size: 20px;
+   padding: 10px 0 10px 70px !important;
+   background: url(/resources/images/pop_blt.gif) no-repeat 50px 55% !important;
+}

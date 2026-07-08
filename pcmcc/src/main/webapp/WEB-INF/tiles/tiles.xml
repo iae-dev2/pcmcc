@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE tiles-definitions PUBLIC "-//Apache Software Foundation//DTD Tiles Configuration 3.0//EN" "http://tiles.apache.org/dtds/tiles-config_3_0.dtd">
+<tiles-definitions>
+   <!-- common page layout -->
+   <definition name="default" template="/WEB-INF/layout/pages.jsp">
+      <put-attribute name="htmlHead" value="/WEB-INF/layout/htmlHead.jsp"/>
+      <put-attribute name="header" value="/WEB-INF/layout/header.jsp"/>
+      <put-attribute name="sideMenu" value="/WEB-INF/layout/sideMenu.jsp"/>
+      <put-attribute name="body" />
+      <put-attribute name="footer" value="/WEB-INF/layout/footer.jsp"/>
+   </definition>
+
+   <definition name="/" extends="default">
+      <put-attribute name="body" value="/WEB-INF/views/com/page.jsp"/>
+   </definition>
+
+   <definition name="*.page" extends="default">
+      <put-attribute name="body" value="/WEB-INF/views/{1}/page.jsp"/>
+   </definition>
+
+   <definition name="*/*.page" extends="default">
+      <put-attribute name="body" value="/WEB-INF/views/{1}/{2}/page.jsp"/>
+   </definition>
+
+   <definition name="*/*/*.page" extends="default">
+      <put-attribute name="body" value="/WEB-INF/views/{1}/{2}/{3}/page.jsp"/>
+   </definition>
+
+   <!-- page body contents only 
+        htmlHead를 포함하는 페이지가 있었으나 팝업을 레이어 팝업(jqxWindow)으로 결정
+        화면 컨텐츠 통일
+   -->
+   <definition name="bodyContents" template="/WEB-INF/layout/emptyBody.jsp">
+      <put-attribute name="body" value=""/>
+   </definition>
+
+   <definition name="*.content" extends="bodyContents">
+      <put-attribute name="body" value="/WEB-INF/views/{1}/page.jsp" />
+   </definition>
+
+   <definition name="*/*.content" extends="bodyContents">
+      <put-attribute name="body" value="/WEB-INF/views/{1}/{2}/page.jsp" />
+   </definition>
+
+   <definition name="*/*/*.content" extends="bodyContents">
+      <put-attribute name="body" value="/WEB-INF/views/{1}/{2}/{3}/page.jsp" />
+   </definition>
+</tiles-definitions>

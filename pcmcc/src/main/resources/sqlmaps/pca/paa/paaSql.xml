@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.re.iae.pcmcc.biz.pca.paa">
+
+   <!-- 게시물 목록 -->
+   <!-- <select id="selectBoard" parameterType="java.util.HashMap" resultType="kr.re.iae.pcmcc.biz.pce.pcf.vo.BoardVo">
+      /** paaSql - selectBoard - 게시물 목록 조회 */
+      SELECT 
+             A.NSEQ        as "nSeq"       /* 01_게시판 일련번호 */
+           , A.VEMPLNO     as "vEmplNo"    /* 02_작성자 사번 */
+           , A.VNAME       as "vName"      /* 03_작성자 성명 */
+           , A.VSUBJECT    as "vSubject"   /* 04_제목 */
+           , A.VCONTENT    as "vContent"   /* 05_내용 */
+           , A.VPASSWORD   as "vPassword"  /* 06_비밀번호 */
+           , A.NHIT        as "nHit"       /* 07_조회수 */
+           , A.VYYYYMMDD   as "vYyyymmdd"  /* 08_작성일자 */
+           , A.VHHMMSS     as "vHhmmss"    /* 09_작성일시 */
+           , A.NREF        as "nHref"      /* 10_ */
+           , A.NSTEP       as "nStep"      /* 11_ */
+           , A.NLEV        as "nLev"       /* 12_ */
+           , A.NPSEQ       as "nPseq"      /* 13_ */
+           , A.NREPLY      as "nReply"     /* 14_ */
+           , B.NFILESEQ    as "nFileSeq"   /* 15_파일 일련번호 */
+           , B.VFILENAME   as "vFileName"  /* 16_파일명 */
+        FROM 
+             TAC4010 A, TAC4011 B
+      <where>
+             A.NSEQ = B.NSEQ(+)
+         AND A.NSEQ = #{nSeq} 
+         AND A.VTYPE = '2'
+      </where>
+       ORDER BY A.NSEQ DESC
+   </select>
+
+   비밀번호 조회
+   <select id="selectPassword" parameterType="java.util.HashMap" resultType="kr.re.iae.pcmcc.biz.pce.pcf.vo.BoardVo">
+      /** paaSql - selectPassword - 비밀번호 조회 */
+      SELECT 
+             VPASSWORD AS nPassword
+        FROM
+             TAC4010
+      <where>
+             NSEQ = {#nSeq}
+      </where>
+   </select>
+
+   새로운 게시물을 입력
+   <insert id="insertBoard" parameterType="kr.re.iae.pcmcc.biz.pce.pcf.vo.BoardVo">
+      /** paaSql - insertBoard - 새로운 게시물을 입력 */
+      게시판 일련번호
+      <selectKey resultType="int" keyProperty="nSeq" order="BEFORE">
+          SELECT NVL(MAX(NSEQ) + 1, 1) FROM TAC4010
+      </selectKey>
+      
+      게시판 답글번호
+      <selectKey resultType="int" keyProperty="nRef" order="BEFORE">
+          SELECT NVL(MAX(NREF) + 1, 1) FROM TAC4010
+      </selectKey>
+
+      INSERT INTO TAC4010 (
+           NSEQ
+         , VEMPLNO
+         , VNAME
+         , VSUBJECT
+         , VCONTENT
+         , VPASSWORD
+         , NHIT
+         , VYYYYMMDD
+         , VHHMMSS
+         , NREF
+         , NSTEP
+         , LEV
+         , NPSEQ
+         , NREPLY
+         , VTYPE
+      ) VALUES
+      (
+           {#nSeq, jdbcType=INTEGER}
+         , {#vEmplNo, jdbcType=VARCHAR}
+         , {#vName, jdbcType=VARCHAR}
+         , {#vSubject, jdbcType=VARCHAR}
+         , {#vContent, jdbcType=VARCHAR}
+         , {#vPassword, jdbcType=VARCHAR}
+         , {#nHit, jdbcType=INTEGER}
+         , TO_CHAR(SYSDATE,'YYYY-MM-DD')
+         , TO_CHAR(SYSDATE, 'HH24:MI:SS')
+         , {#nRef, jdbcType=INTEGER}
+         , {#nStep, jdbcType=INTEGER}
+         , {#nLev, jdbcType=INTEGER}
+         , {#nPseq, jdbcType=INTEGER}
+         , {#nReply, jdbcType=INTEGER}
+         , '2'
+      )
+   </insert>
+
+   게시판 첨부파일 저장 
+   <insert id="insertBoardFile" parameterType="kr.re.iae.pcmcc.biz.pce.pcf.vo.BoardVo">
+      첨부파일 일련번호
+      <selectKey resultType="int" keyProperty="nFileSeq" order="BEFORE">
+          SELECT NVL(MAX(NFILESEQ) + 1, 1) FROM TAC4011 WHERE NSEQ = #{nSeq}
+      </selectKey>
+      
+      /** paaSql - insertBoardFile - 게시판 입력, 답변 */
+      INSERT INTO TAC4011 (
+           NSEQ
+         , NFILESEQ
+         , VFILENAME
+         , VTEMPFILENAME
+      ) VALUES
+      (
+           {#nSeq, jdbcType=INTEGER}
+         , {#nFileSeq, jdbcType=INTEGER}
+         , {#vFileName, jdbcType=VARCHAR}
+         , {#vTempFileName, jdbcType=VARCHAR}
+      )
+   </insert>
+   
+   게시물 수정
+   <update id="updateBoard" parameterType="kr.re.iae.pcmcc.biz.pce.pcf.vo.BoardVo">
+      /** paaSql - updateBoard - 게시물 내용을 수정 */
+      UPDATE TAC4010
+      <set>
+         <if test="vName     != null">VNAME     = #{vName}, </if>
+         <if test="vSubject  != null">VSUBJECT  = #{vSubject}, </if>
+         <if test="vContent  != null">VCONTENT  = #{vContent}, </if>
+         <if test="vPassword != null">VPASSWORD = #{vPassword}, </if>
+      </set>
+      <where>
+         NSEQ = {#nSeq}
+      </where>
+   </update>
+
+   게시물 삭제
+   <delete id="deleteBoard" parameterType="java.util.HashMap">
+      /** paaSql - deleteBoard - 게시물을 삭제 */
+      DELETE FROM TAC4010
+      <where>
+         NSEQ = #{nSeq}
+      </where>
+   </delete>
+   
+   게시물 첨부파일 삭제
+   <delete id="deleteBoardFile" parameterType="java.util.HashMap">
+      /** paaSql - deleteBoardFile - 게시물 첨부파일을 삭제 */
+      DELETE FROM TAC4011
+      <where>
+         NSEQ = #{nSeq}
+      </where>
+   </delete>
+
+   조회수 증가
+   <update id="updateHitCount" parameterType="kr.re.iae.pcmcc.biz.pce.pcf.vo.BoardVo">
+      /** paaSql - updateHitCount - 게시물 조회수를 증가 */
+      UPDATE TAC4010
+      <set>
+         NHIT = NHIT + 1
+      </set>
+      <where>
+         NSEQ = {#nSeq}
+      </where>
+   </update> -->
+
+</mapper>
